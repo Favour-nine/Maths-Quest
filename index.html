@@ -1771,7 +1771,7 @@ const DIAG_BOUNDS = { F: [[5, 188], [4, 160], [3, 119], [2, 79], [1, 39]], H: [[
 function diagGrade(pct, tier) { for (const [g, m] of DIAG_BOUNDS[tier]) if (pct >= m / 240 * 100 - 1e-9) return g; return 0; }
 
 // item builder: src, marks, topic, grade, question, answer, extras
-const I = (src, m, t, g, q, a, x = {}) => Object.assign({ src, m, t, g, q, a }, x);
+const I = (src, m, t, g, q, a, x = {}, y = {}) => Object.assign({ src, m, t, g, q, a }, x, y);
 const MCx = (o, w) => ({ k: 'mc', o, w });          // o = wrong options
 const MU = (f, x = {}) => Object.assign({ k: 'multi', f }, x); // f = [[label, value, dp?]]
 const FR = (w) => ({ k: 'frac', w });
@@ -3102,7 +3102,69 @@ const FG = (() => {
   }
   function vtGraph(pts, o) { return lineGraph(pts, o); }
 
-  return { machine, poly, rightTri, rays, parallels, regPoly, cuboid, triPrism, paraPrism, cylinder, cone, sphere, hemisphere, cornet, pyramid, twoCones, spheresInCyl, hemiAndCyl, twoBoxes, circle, ring, circleInSquare, squareInCircle, semiInCircle, sector, semicircle, quarterCut, pizzas, tangentChord, squareQuarter, pie, tree, spinners, venn, cards, bags, tbl, freq, across, bearing, twoLegs, lineGraph, cliff, vtGraph, nd, NOTE };
+
+  /* ---------- Functional Skills extras ---------- */
+  function clock(h, m) {
+    const cx = 110, cy = 110, R = 90; let s = `<circle cx="${cx}" cy="${cy}" r="${R}" fill="var(--surface)" stroke="currentColor" stroke-width="4"/>`;
+    for (let i = 1; i <= 12; i++) { const a = rad(90 - i * 30); s += T(cx + 70 * Math.cos(a), cy - 70 * Math.sin(a) + 6, i); }
+    for (let i = 0; i < 60; i++) { const a = rad(90 - i * 6), r0 = i % 5 ? 84 : 80; s += Ln(cx + r0 * Math.cos(a), cy - r0 * Math.sin(a), cx + 89 * Math.cos(a), cy - 89 * Math.sin(a), { w: i % 5 ? 1 : 2.5 }); }
+    const ha = rad(90 - ((h % 12) + m / 60) * 30), ma = rad(90 - m * 6);
+    s += Ln(cx, cy, cx + 45 * Math.cos(ha), cy - 45 * Math.sin(ha), { w: 7 }) + Ln(cx, cy, cx + 72 * Math.cos(ma), cy - 72 * Math.sin(ma), { w: 4 }) + `<circle cx="${cx}" cy="${cy}" r="6" fill="currentColor"/>`;
+    return sv(220, 220, s, 'Clock face');
+  }
+  function bar(cats, vals, o = {}) {
+    const n = cats.length, X0 = 64, W = 300, Y0 = 200, H = 160, bw = Math.min(46, (W - X0 - 10) / n * 0.6), gap = (W - X0) / n;
+    let s = Ln(X0, Y0, W + 4, Y0, { w: 2 }) + Ln(X0, Y0, X0, Y0 - H - 6, { w: 2 });
+    const every = o.ymax / o.step > 10 ? 2 : 1;
+    for (let v = 0, k = 0; v <= o.ymax; v += o.step, k++) { const y = Y0 - v / o.ymax * H; s += Ln(X0, y, W, y, { w: 0.6 }) + (k % every ? '' : T(X0 - 6, y + 4, v, { sm: 1, a: 'end' })); }
+    cats.forEach((c, i) => { const x = X0 + gap * i + (gap - bw) / 2; if (vals[i] != null) { const h = vals[i] / o.ymax * H; s += `<rect x="${r1(x)}" y="${r1(Y0 - h)}" width="${r1(bw)}" height="${r1(h)}" fill="var(--svgfill)" stroke="currentColor" stroke-width="2"/>`; } s += T(x + bw / 2, Y0 + 18, c, { sm: 1 }); });
+    if (o.yl) s += T(14, Y0 - H / 2, o.yl, { sm: 1, rot: -90 }); if (o.xl) s += T((X0 + W) / 2, Y0 + 40, o.xl, { sm: 1 });
+    return (o.title ? `<p class="center small" style="margin:0"><b>${o.title}</b></p>` : '') + sv(310, o.xl ? 250 : 228, s, 'Bar chart');
+  }
+  function catLine(cats, vals, o = {}) {
+    const n = cats.length, X0 = 64, W = 300, Y0 = 200, H = 160, gap = (W - X0 - 20) / (n - 1);
+    let s = Ln(X0, Y0, W + 4, Y0, { w: 2 }) + Ln(X0, Y0, X0, Y0 - H - 6, { w: 2 });
+    for (let v = 0; v <= o.ymax; v += o.step) { const y = Y0 - v / o.ymax * H; s += Ln(X0, y, W, y, { w: 0.6 }) + T(X0 - 6, y + 4, v, { sm: 1, a: 'end' }); }
+    const P = vals.map((v, i) => [X0 + 10 + gap * i, v == null ? null : Y0 - v / o.ymax * H]);
+    s += `<polyline points="${P.filter(p => p[1] != null).map(p => r1(p[0]) + ',' + r1(p[1])).join(' ')}" fill="none" stroke="var(--brand,#3A10E5)" stroke-width="3"/>`;
+    P.forEach((p, i) => { if (p[1] != null) s += `<circle cx="${r1(p[0])}" cy="${r1(p[1])}" r="4.5" fill="var(--brand,#3A10E5)"/>`; s += T(p[0], Y0 + 18, cats[i], { sm: 1 }); });
+    if (o.yl) s += T(14, Y0 - H / 2, o.yl, { sm: 1, rot: -90 });
+    return (o.title ? `<p class="center small" style="margin:0"><b>${o.title}</b></p>` : '') + sv(310, 228, s, 'Line graph');
+  }
+  function compass(arrows) { // arrows: [[deg, label]]
+    const cx = 120, cy = 120; let s = ARR + `<circle cx="${cx}" cy="${cy}" r="92" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 4"/>` + T(cx, 18, 'N') + Ln(cx, cy, cx, 30, { w: 2.5, arrow: 1 });
+    arrows.forEach(([d, l]) => { const a = rad(90 - d); s += Ln(cx, cy, cx + 80 * Math.cos(a), cy - 80 * Math.sin(a), { w: 3, arrow: 1 }) + T(cx + 100 * Math.cos(a), cy - 100 * Math.sin(a) + 6, l, { acc: 1 }); });
+    return sv(240, 240, s + `<circle cx="${cx}" cy="${cy}" r="4" fill="currentColor"/>`, 'Compass with arrows');
+  }
+  function jug(level, max, step, unit = 'ml') {
+    const x0 = 90, x1 = 210, y0 = 30, y1 = 230, H = y1 - y0 - 10;
+    const Y = v => y1 - v / max * H;
+    let s = `<rect x="${x0}" y="${Y(level)}" width="${x1 - x0}" height="${y1 - Y(level)}" fill="var(--fig5,#CFE8FF)"/>` + `<path d="M${x0},${y0} L${x0},${y1} L${x1},${y1} L${x1},${y0} M${x1},60 Q${x1 + 50},70 ${x1 + 40},130 Q${x1 + 30},170 ${x1},180" fill="none" stroke="currentColor" stroke-width="3"/>`;
+    for (let v = 0; v <= max; v += step) { const y = Y(v); s += Ln(x0, y, x0 + 26, y, { w: 2 }) + T(x0 - 8, y + 5, v, { a: 'end', sm: 1 }); }
+    for (let v = step / 2; v < max; v += step) { const y = Y(v); s += Ln(x0, y, x0 + 14, y, { w: 1.5 }); }
+    s += T(x0 - 8, y0 - 6, unit, { a: 'end', sm: 1 });
+    return sv(300, 245, s, 'Measuring jug');
+  }
+  function coordGrid(pts, o = {}) {
+    const r = o.r || 6, U = 22, C = r * U + 20, S = 2 * C;
+    let s = '';
+    for (let i = -r; i <= r; i++) { s += Ln(C + i * U, 20, C + i * U, S - 20, { w: i ? 0.5 : 2 }) + Ln(20, C + i * U, S - 20, C + i * U, { w: i ? 0.5 : 2 }); if (i && i % 2 === 0) s += T(C + i * U, C + 16, i, { sm: 1 }) + T(C - 8, C - i * U + 4, i, { sm: 1, a: 'end' }); }
+    s += T(S - 14, C - 6, 'x', { sm: 1 }) + T(C + 10, 28, 'y', { sm: 1, a: 'start' });
+    pts.forEach(([x, y, l]) => { s += `<path d="M${C + x * U - 6},${C - y * U - 6} l12,12 M${C + x * U + 6},${C - y * U - 6} l-12,12" stroke="var(--brand,#3A10E5)" stroke-width="3"/>` + T(C + x * U + 10, C - y * U - 8, l, { a: 'start', acc: 1 }); });
+    return sv(S, S, s, 'Coordinate grid');
+  }
+  function stadium(len, dia) {
+    let s = `<path d="M90,40 L230,40 A60,60 0 0,1 230,160 L90,160 A60,60 0 0,1 90,40 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + Ln(90, 40, 90, 160, { dash: 1, w: 1.5 }) + Ln(230, 40, 230, 160, { dash: 1, w: 1.5 });
+    s += T(160, 32, len, { acc: 1 }) + T(245, 105, dia, { acc: 1, a: 'start' });
+    return sv(320, 180, s, 'Rectangle with a semicircle at each end') + nd;
+  }
+  function roundabout(d, inset) {
+    let s = `<circle cx="150" cy="120" r="100" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/><circle cx="150" cy="120" r="82" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="6 5"/>`;
+    s += Ln(50, 120, 250, 120, { w: 1.6 }) + T(150, 112, d, { acc: 1 }) + Ln(150, 20, 150, 38, { w: 2 }) + T(158, 34, inset, { acc: 1, a: 'start', sm: 1 }) + `<circle cx="150" cy="38" r="4" fill="currentColor"/>` + T(144, 52, 'S', { a: 'end', sm: 1 });
+    return sv(300, 235, s, 'Circular roundabout with a dashed planting circle') + nd;
+  }
+
+  return { clock, bar, catLine, compass, jug, coordGrid, stadium, roundabout, machine, poly, rightTri, rays, parallels, regPoly, cuboid, triPrism, paraPrism, cylinder, cone, sphere, hemisphere, cornet, pyramid, twoCones, spheresInCyl, hemiAndCyl, twoBoxes, circle, ring, circleInSquare, squareInCircle, semiInCircle, sector, semicircle, quarterCut, pizzas, tangentChord, squareQuarter, pie, tree, spinners, venn, cards, bags, tbl, freq, across, bearing, twoLegs, lineGraph, cliff, vtGraph, nd, NOTE };
 })();
 
 /* =========================================================
@@ -3256,6 +3318,279 @@ const FG = (() => {
   if (typeof window !== 'undefined') window.__FIGS = { applied, missing };
   else globalThis.__FIGS = { applied, missing };
 })();
+
+/* =========================================================
+   FUNCTIONAL SKILLS MATHS DIAGNOSTICS — Pearson Edexcel
+   Each test mirrors a real Pearson paper: same contexts, skills,
+   marks and order, with new numbers. Section A = no calculator,
+   Section B = calculator. Drawing tasks are turned into questions
+   that can be marked on screen (same marks).
+   ========================================================= */
+const FSL = {
+  E3: { name: 'Entry Level 3', short: 'Entry 3', aMin: 25, bMin: 75, total: 36, pass: 27, g: 1 },
+  L1: { name: 'Level 1', short: 'Level 1', aMin: 25, bMin: 90, total: 56, pass: 32, g: 2 },
+  L2: { name: 'Level 2', short: 'Level 2', aMin: 25, bMin: 90, total: 64, pass: 36, g: 3 },
+};
+const FS_STRANDS = {
+  'Using numbers': ['negatives', 'rounding', 'factors-primes', 'fractions', 'decimals', 'percentages', 'ratio', 'proportion', 'powers-roots', 'standard-form', 'substitution', 'equations', 'sequences', 'simplifying'],
+  'Measures, shape & space': ['conversions', 'compound-measures', 'perimeter', 'area', 'volume', 'surface-area', 'angles', 'bearings', 'transformations', 'similar', 'pythagoras', 'straight-line'],
+  'Handling data': ['averages', 'pie-charts', 'probability', 'venn', 'tree'],
+};
+const fsStrand = t => Object.keys(FS_STRANDS).find(k => FS_STRANDS[k].includes(t)) || 'Using numbers';
+DIAG.FS = [];
+const FSV = (v) => { v.board = 'Functional Skills'; v.calc = true; v.items.forEach(it => { if (!it.sec) it.sec = 'B'; }); DIAG.FS.push(v); };
+const SA = (it) => Object.assign(it, { sec: 'A' });
+const YN = (right, wrongs, w) => MCx(wrongs, w); // readability helper for Yes/No decisions
+
+/* =================== ENTRY LEVEL 3 =================== */
+FSV({ id: 'FS-E3-1', level: 'E3', name: 'Entry 3 · Set 1 style', model: 'Pearson Edexcel FS Maths Entry 3 · Past Paper Set 1', items: [
+  SA(I('A1', 2, 'decimals', 1, 'Amir is doing a course. It lasts 8 months and costs £93 each month.<br>Amir says the course costs more than £750 in total. Is he correct?', 'No — it costs £744', MCx(['Yes — it costs £774', 'Yes — it costs £754', 'No — it costs £734'], '8 × 93 = 744'))),
+  SA(I('A2', 3, 'conversions', 1, 'Amir has 95 days to finish a project. He works 7 days a week.<br>How many weeks and days does he have?', null, MU([['weeks', 13], ['days', 4]], { w: '95 ÷ 7 = 13 remainder 4' }))),
+  SA(I('A3', 2, 'decimals', 1, 'Amir\'s app had 347 downloads in April and 485 in May.<br>Work out the total.', 832, W('347 + 485'))),
+  SA(I('A4', 2, 'fractions', 1, 'There were 868 downloads in June. A quarter of them were in the first week.<br>How many downloads were in the first week?', 217, W('868 ÷ 4'))),
+  I('B1', 1, 'conversions', 1, 'The clock shows the time Amir arrives at work in the morning. What time is it?', 'twenty-five to nine', Object.assign(MCx(['eight thirty-five past seven', 'twenty-five past eight', 'seven forty'], 'The minute hand is on 7 (35 minutes), the hour hand nearly at 9'), { fig: FG.clock(8, 35) })),
+  I('B2', 3, 'conversions', 1, 'There is 58 cm of space on Amir\'s desk. His screen is 495 mm wide and his speaker is 9 cm wide.<br>Will the screen and the speaker fit in the space?', 'No — they need 58.5 cm', MCx(['Yes — they need 50.4 cm', 'Yes — they need 57.5 cm', 'No — they need 59.5 cm'], '495 mm = 49.5 cm; 49.5 + 9 = 58.5 cm')),
+  I('B3', 1, 'decimals', 1, 'Amir chooses the laptop with the least weight. Which one does he choose?', '1.506 kg', MCx(['1.58 kg', '1.55 kg', '1.6 kg'], 'Compare tenths, then hundredths')),
+  I('B4', 3, 'averages', 1, 'The bar chart shows downloads of different types of app. There were 880 downloads of game apps.<br>Amir says there were more game app downloads than sport and travel downloads together. Is he correct?', 'No — sport and travel had 900', Object.assign(MCx(['Yes — sport and travel had 800', 'Yes — sport and travel had 860', 'No — sport and travel had 1130'], 'Sport 480 + Travel 420 = 900'), { fig: FG.bar(['Travel', 'Business', 'Sport', 'Education'], [420, 650, 480, 300], { ymax: 800, step: 100, yl: 'Downloads', title: 'Numbers of app downloads' }) })),
+  I('B5', 2, 'conversions', 1, 'The clock shows when Amir starts work in the morning. He works for 3 hours 45 minutes.<br>What time does he finish?', '1:00 pm', Object.assign(MCx(['12:60 pm', '12:00 pm', '1:15 pm'], '9:15 + 3 h = 12:15; + 45 min = 1:00 pm'), { fig: FG.clock(9, 15) })),
+  I('B6', 1, 'sequences', 1, 'Points needed for each level follow a pattern: Level 2: 25, Level 3: 40, Level 4: 55.<br>How many points are needed for Level 5?', 70, W('Add 15 each time')),
+  I('B7', 1, 'bearings', 1, 'The compass shows an arrow labelled A. In which direction does arrow A point?', 'South-west', Object.assign(MCx(['South-east', 'North-west', 'West'], 'Between south and west'), { fig: FG.compass([[225, 'A']]) })),
+  I('B8', 1, 'transformations', 1, 'Which shape has only one line of symmetry?', 'Isosceles triangle', MCx(['Square', 'Rectangle', 'Equilateral triangle'], 'An isosceles triangle folds onto itself one way')),
+  I('B9', 1, 'averages', 1, 'The table shows the number of downloads of Amir\'s app. Which month had the greatest number of downloads in Europe?', 'October', Object.assign(MCx(['September', 'November', 'December'], 'Read down the Europe column: 412, 693, 658, 587'), { fig: FG.tbl(['Month', 'UK', 'Europe', 'Rest of the world'], [['September', 135, 412, 298], ['October', 254, 693, 905], ['November', 480, 658, 731], ['December', 812, 587, 466]]) })),
+  I('B10', 2, 'averages', 1, 'The line graph shows the income from Amir\'s app. Read the income for October and for November.', null, Object.assign(MU([['October (£ thousand)', 18], ['November (£ thousand)', 26]], { w: 'Read across from each point' }), { fig: FG.catLine(['Sep', 'Oct', 'Nov'], [14, 18, 26], { ymax: 30, step: 5, yl: 'Income (£ thousand)', title: 'Game app income' }) })),
+  I('B11', 1, 'averages', 1, 'Players said what they think of the app:<br>good, excellent, fair, excellent, good, very good, excellent, good, excellent, very good, good, excellent, fair, excellent, good, excellent<br>How many said "excellent"?', 7, W('Count carefully — tick them off')),
+  I('B12', 2, 'decimals', 1, '238 processes were running when Amir started. After an hour there were 415.<br>How many more were running after an hour?', 177, W('415 − 238')),
+  I('B13a', 1, 'rounding', 1, 'Round 238 to the nearest 100.', 200, W('38 is less than 50, so round down')),
+  I('B13b', 1, 'rounding', 1, 'Which is the best check of 415 − 238 = 177 using rounding?', '400 − 200 = 200, which is close to 177', MCx(['415 + 238 = 653', '500 − 300 = 200', '177 + 177 = 354'], 'Round both numbers to the nearest 100')),
+  I('B14', 2, 'conversions', 1, 'Amir can have 1 bottle of 0.75 litres or 2 cans of 330 ml each.<br>Does the bottle have more drink than the 2 cans?', 'Yes — 750 ml is more than 660 ml', MCx(['No — 75 ml is less than 660 ml', 'No — the cans have 750 ml', 'Yes — the bottle has 1000 ml'], '0.75 litres = 750 ml; 2 × 330 = 660 ml')),
+  I('B15', 3, 'decimals', 1, 'Amir has £60. He spends £37.45 on software. How much does he have left?', 22.55, { pre: '£', dp: 2, w: '60.00 − 37.45' }),
+  I('B16', 1, 'rounding', 1, 'Round £37.45 to the nearest £1.', 37, { pre: '£', w: '45p is less than 50p' }),
+] });
+FSV({ id: 'FS-E3-3', level: 'E3', name: 'Entry 3 · Set 3 style', model: 'Pearson Edexcel FS Maths Entry 3 · Past Paper Set 3', items: [
+  SA(I('A1', 2, 'decimals', 1, 'Eleri buys boots for £158 and a rucksack for £276. Work out the total cost.', 434, { pre: '£', w: '158 + 276' })),
+  SA(I('A2', 2, 'decimals', 1, 'Eleri\'s holiday lasts 12 days. She needs £35 spending money each day. Work out the total.', 420, { pre: '£', w: '12 × 35' })),
+  SA(I('A3', 2, 'conversions', 1, 'Eleri runs 3 laps of a track. Each lap is 300 m. She thinks she has run 1 km. Is she correct?', 'No — she ran 900 m', MCx(['Yes — she ran 1000 m', 'Yes — she ran 1 km 300 m', 'No — she ran 330 m'], '3 × 300 = 900 m; 1 km = 1000 m'))),
+  SA(I('A4', 3, 'decimals', 1, '164 people are put into teams of 15. Anyone left over forms a small group.<br>How many teams are there, and how many people are in the small group?', null, MU([['teams', 10], ['in the small group', 14]], { w: '15 × 10 = 150; 164 − 150 = 14' }))),
+  I('B1', 3, 'averages', 1, 'The line graph shows rainfall last year. Eleri thinks May had twice as much rain as June. Is she correct?', 'Yes — May 80 mm, June 40 mm', Object.assign(MCx(['No — May 80 mm, June 30 mm', 'No — May 60 mm, June 40 mm', 'Yes — May 70 mm, June 35 mm'], 'Read each point from the graph'), { fig: FG.catLine(['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep'], [50, 80, 40, 30, 60, 70], { ymax: 100, step: 10, yl: 'Rainfall (mm)', title: 'Rainfall' }) })),
+  I('B2', 1, 'decimals', 1, 'Eleri wants the cheapest cottage with 4 bedrooms. Which does she choose?', 'Cottage E', Object.assign(MCx(['Cottage F', 'Cottage B', 'Cottage C'], 'Only look at the 4-bedroom cottages: B £805, C £812, E £798'), { fig: FG.tbl(['Cottage', 'Bedrooms', 'Price'], [['A', 3, '£842'], ['B', 4, '£805'], ['C', 4, '£812'], ['D', 3, '£799'], ['E', 4, '£798'], ['F', 3, '£776']]) })),
+  I('B3', 2, 'decimals', 1, 'The travel cost is £348, shared equally by 4 friends. How much does each pay?', 87, { pre: '£', w: '348 ÷ 4' }),
+  I('B4a', 1, 'rounding', 1, 'Round 348 to the nearest 100.', 300, W('48 rounds down')),
+  I('B4b', 1, 'rounding', 1, 'Which is the best check of £348 ÷ 4 = £87 using your rounded number?', '300 ÷ 4 = 75, which is close to 87', MCx(['348 × 4 = 1392', '400 ÷ 4 = 100, so 87 is wrong', '87 + 4 = 91'], 'Use 300 in place of 348')),
+  I('B5', 1, 'decimals', 1, 'Activities: surfing 1 hour £38, horse riding 4 hours £46, climbing 3 hours £41.<br>How much more does horse riding cost than surfing?', 8, { pre: '£', w: '46 − 38', fig: FG.tbl(['Activity', 'Time', 'Cost'], [['Surfing', '1 hour', '£38'], ['Horse riding', '4 hours', '£46'], ['Climbing', '3 hours', '£41']]) }),
+  I('B6', 1, 'conversions', 1, 'Eleri goes to an obstacle course in the morning. The clock shows the time. Which is correct?', '7.55 am', Object.assign(MCx(['8.05 am', '7.55 pm', '8.05 pm'], 'Five minutes to 8, in the morning'), { fig: FG.clock(7, 55) })),
+  I('B7', 2, 'averages', 1, 'The bar chart shows the points for teams A and B. Team C has 160 points.<br>Read Team B\'s points, and work out how many more points B has than C.', null, Object.assign(MU([['Team B points', 280], ['B more than C', 120]], { w: 'Each line is 20 points' }), { fig: FG.bar(['Team A', 'Team B', 'Team C'], [220, 280, null], { ymax: 300, step: 20, yl: 'Points', title: 'Total points for each team' }) })),
+  I('B8', 1, 'angles', 1, 'Which shape always has a right angle?', 'Rectangle', MCx(['Equilateral triangle', 'Regular hexagon', 'Circle'], 'A rectangle has four right angles')),
+  I('B9', 1, 'fractions', 1, 'A class has 16 people. 4 of them are new. Eleri thinks one quarter of the class are new. Is she correct?', 'Yes — 4 out of 16 is one quarter', MCx(['No — it is one fifth', 'No — it is one third', 'Yes — 4 out of 16 is one half'], '16 ÷ 4 = 4')),
+  I('B10', 1, 'conversions', 1, 'Eleri wants a class that starts between 1:30 and 3:00 in the afternoon. Which start time is right?', '14:20', MCx(['13:15', '01:45', '15:10'], '1:30 pm = 13:30; 3:00 pm = 15:00')),
+  I('B11', 1, 'decimals', 1, 'Eleri wants a board as close as possible to 1.5 m long. Which one should she choose?', '1.52 m', MCx(['1.45 m', '1.47 m', '1.6 m'], '1.52 is 0.02 away; 1.47 is 0.03 away')),
+  I('B12', 2, 'perimeter', 1, 'A walk goes cottage → village 2.5 km, village → woods 4 km, woods → farm 3.5 km, farm → cottage 2 km.<br>How long is the walk?', 12, { unit: 'km', w: '2.5 + 4 + 3.5 + 2' }),
+  I('B13', 1, 'angles', 1, 'Eleri faces north and turns clockwise to face east. What fraction of a full turn is this?', [1, 4], FR('A quarter turn')),
+  I('B14', 1, 'sequences', 1, 'Boxes hold 35, 70 and 105 tea bags. What is the next number in the pattern?', 140, W('Add 35')),
+  I('B15', 3, 'decimals', 1, 'Eleri buys tea bags for £3.47 and bread for 68p. Work out the total.', 4.15, { pre: '£', dp: 2, w: '£3.47 + £0.68' }),
+  I('B16', 3, 'conversions', 1, 'The jug shows the milk Eleri has. She needs half a litre altogether. She thinks she must pour in 340 ml more. Is she correct?', 'No — she needs 350 ml more', Object.assign(MCx(['Yes — she needs 340 ml more', 'No — she needs 450 ml more', 'No — she needs 250 ml more'], 'Half a litre = 500 ml; 500 − 150 = 350'), { fig: FG.jug(150, 600, 100) })),
+  I('B17', 1, 'conversions', 1, 'Eleri needs 275 g of flour. The scales show 350 g. How much more flour is there than she needs?', 75, { unit: 'g', w: '350 − 275' }),
+] });
+FSV({ id: 'FS-E3-9', level: 'E3', name: 'Entry 3 · Set 9 style', model: 'Pearson Edexcel FS Maths Entry 3 · Past Paper Set 9', items: [
+  SA(I('A1', 2, 'decimals', 1, '836 people enter a fun run. 459 are on the long run; the rest are on the family run.<br>How many are on the family run?', 377, W('836 − 459'))),
+  SA(I('A2', 2, 'conversions', 1, 'The family run is 1 km. From the start to point A is 450 m. Omar says from A to the finish is 650 m. Is he correct?', 'No — it is 550 m', MCx(['Yes — it is 650 m', 'No — it is 450 m', 'No — it is 1450 m'], '1 km = 1000 m; 1000 − 450 = 550'))),
+  SA(I('A3', 3, 'decimals', 1, 'Omar has 500 cups. He shares them equally between 8 water points, as many as possible at each.<br>How many cups are at each point, and how many are left over?', null, MU([['cups at each point', 62], ['left over', 4]], { w: '8 × 62 = 496' }))),
+  SA(I('A4', 2, 'decimals', 1, 'Omar collects £286 from sponsors and £78 on the day. Work out the total.', 364, { pre: '£', w: '286 + 78' })),
+  I('B1', 2, 'conversions', 1, 'The clock shows when Omar sets off for work in the afternoon. The journey takes 30 minutes. When does he arrive?', '3:15 pm', Object.assign(MCx(['2:75 pm', '3:15 am', '3:45 pm'], '2:45 + 30 min = 3:15 pm'), { fig: FG.clock(2, 45) })),
+  I('B2', 1, 'decimals', 1, 'A customer wants the cheapest double room for 1 night. Which date do they choose?', '16 May', Object.assign(MCx(['14 May', '15 May', '18 May'], 'Read along the double row'), { fig: FG.tbl(['Room', '14 May', '15 May', '16 May', '17 May', '18 May'], [['single', 72, 74, 76, 76, 80], ['double', 84, 82, 78, 84, 92], ['family', 95, 88, 95, 95, 95]]) })),
+  I('B3', 1, 'decimals', 1, 'The bill with the smallest room number is printed first. Which is printed first?', 'Room 235', MCx(['Room 253', 'Room 305', 'Room 325'], 'Compare hundreds, then tens')),
+  I('B4', 3, 'decimals', 1, 'Breakfast costs £16.45 for 1 person. Work out the cost for 2 people.', 32.9, { pre: '£', dp: 2, w: '16.45 × 2' }),
+  I('B5a', 1, 'rounding', 1, 'Round £16.45 to the nearest £1.', 16, { pre: '£', w: '45p rounds down' }),
+  I('B5b', 1, 'rounding', 1, 'Which is the best check of the cost for 2 people?', '£16 × 2 = £32, close to £32.90', MCx(['£16.45 + 2 = £18.45', '£20 × 2 = £40, so £32.90 is wrong', '£32.90 ÷ 3 = £10.97'], 'Use the rounded price')),
+  I('B6', 1, 'decimals', 1, 'Omar uses the largest coffee cup. Which size is it?', '0.4 litres', MCx(['0.38 litres', '0.35 litres', '0.09 litres'], '0.4 = 0.40, the biggest')),
+  I('B7', 3, 'conversions', 1, 'The jug shows the water Omar has poured. He needs 1 litre altogether. How much more water does he pour in?', 650, { unit: 'ml', w: '1 litre = 1000 ml; 1000 − 350', fig: FG.jug(350, 1000, 100) }),
+  I('B8', 3, 'averages', 1, 'The bar chart shows the number of people at breakfast. How many more people are there at 8 am than at 7 am?', 55, { w: '75 − 20', fig: FG.bar(['7 am', '8 am', '9 am'], [20, 75, 40], { ymax: 90, step: 10, yl: 'Number of people' }) }),
+  I('B9', 1, 'sequences', 1, 'Room numbers follow a pattern: 15, 23, 31, 39. What is the next number?', 47, W('Add 8')),
+  I('B10', 1, 'fractions', 1, 'A hotel has 300 rooms. A group books 30. Omar says they book 1/10 of the rooms. Is he correct?', 'Yes — 300 ÷ 10 = 30', MCx(['No — it is 1/5', 'No — it is 1/3', 'No — it is 1/30'], '1/10 of 300 = 30')),
+  I('B11', 1, 'averages', 1, 'The bar chart shows customers on three days. On Monday there were 150 customers.<br>How many more customers were there on Saturday than on Monday?', 150, { w: '300 − 150', fig: FG.bar(['Friday', 'Saturday', 'Sunday'], [250, 300, 200], { ymax: 350, step: 50, yl: 'Number of customers' }) }),
+  I('B12', 2, 'decimals', 1, 'Omar has 14 rows of chairs with 22 chairs in each row. How many chairs altogether?', 308, W('14 × 22')),
+  I('B13', 2, 'conversions', 1, 'On a plan, each square is 50 cm. A table is 150 cm long and 300 cm wide. How many squares long and wide is it on the plan?', null, MU([['squares long', 3], ['squares wide', 6]], { w: '150 ÷ 50 and 300 ÷ 50' })),
+  I('B14', 1, 'transformations', 1, 'Which shape has only one line of symmetry?', 'Kite', MCx(['Square', 'Regular pentagon', 'Rectangle'], 'A kite folds along one diagonal only')),
+  I('B15', 1, 'conversions', 1, 'The shower water is 34 °C. It needs to be 40 °C. Omar says it needs to be 7 °C higher. Is he correct?', 'No — it needs to be 6 °C higher', MCx(['Yes — 7 °C higher', 'No — 4 °C higher', 'No — 74 °C higher'], '40 − 34 = 6')),
+  I('B16', 1, 'bearings', 1, 'The hotel entrance faces south-east. Which arrow points south-east?', 'B', Object.assign(MCx(['A', 'C', 'D'], 'South-east is between south and east'), { fig: FG.compass([[45, 'A'], [135, 'B'], [225, 'C'], [315, 'D']]) })),
+  I('B17', 1, 'averages', 1, 'Reasons customers chose the hotel:<br>price, food, price, comfort, location, price, comfort, price, location, food, price, comfort, price, location, comfort, price, food, price, comfort, location<br>How many said "price"?', 8, W('Count each "price"')),
+] });
+
+/* =================== LEVEL 1 =================== */
+FSV({ id: 'FS-L1-P3', level: 'L1', name: 'Level 1 · Practice Set 3 style', model: 'Pearson Edexcel FS Maths Level 1 · Practice Set 3', items: [
+  SA(I('A1', 3, 'averages', 2, 'Work out the mean of these four numbers: 32.6, 41.8, 27.3, 18.7', 30.1, W('Total 120.4; ÷ 4'))),
+  SA(I('A2', 3, 'powers-roots', 2, 'Work out 13² + 30 × 6', 349, W('169 + 180 — square and multiply before adding'))),
+  SA(I('A3a', 3, 'percentages', 2, 'Greta manages an attraction. 36 400 people visited last spring. Visitors went up by 15% this spring.<br>How many people visited this spring?', 41860, W('10% = 3640, 5% = 1820; 36 400 + 5460'))),
+  SA(I('A3b', 1, 'percentages', 2, 'Which is a correct reverse calculation to check your answer?', '41 860 − 5460 = 36 400', MCx(['41 860 + 5460 = 47 320', '36 400 × 15 = 546 000', '41 860 ÷ 15 = 2790'], 'Take the increase back off'))),
+  SA(I('A4', 4, 'conversions', 2, 'Fabio has four jobs: 1¼ hours, 1 hour 10 minutes, 40 minutes and ¾ of an hour.<br>He thinks he can finish them all within 4 hours. Is he correct?', 'Yes — they take 3 hours 50 minutes', MCx(['No — they take 4 hours 10 minutes', 'No — they take 4 hours 50 minutes', 'Yes — they take 3 hours 15 minutes'], '75 + 70 + 40 + 45 = 230 minutes'))),
+  I('B1a', 2, 'averages', 2, 'Work out the range of: 12 836, 8473, 3592, 9615, 15 207', 11615, W('15 207 − 3592')),
+  I('B1b', 1, 'rounding', 2, 'Which is the best estimate to check your range?', '15 000 − 4000 = 11 000', MCx(['12 000 − 8000 = 4000', '15 000 + 4000 = 19 000', '16 000 − 9000 = 7000'], 'Round the largest and smallest')),
+  I('B2', 4, 'proportion', 2, 'A recipe for 6 sausage rolls uses 300 g of pastry. Emily makes 80 sausage rolls. Pastry comes in 500 g packs.<br>Emily thinks 8 packs is the smallest number she needs. Is she correct?', 'Yes — she needs 4000 g, which is exactly 8 packs', MCx(['No — she needs 4800 g, so 10 packs', 'No — she needs 4500 g, so 9 packs', 'Yes — she needs 3000 g'], '80 ÷ 6 × 300 = 4000 g')),
+  I('B3', 5, 'percentages', 2, 'An energy company charges £198.40 a year plus 5.12p per kWh, then takes 5% off the total for direct debit.<br>Gareth uses 36 000 kWh and pays by direct debit. Work out his bill.', 1939.52, { pre: '£', dp: 2, w: '36 000 × 0.0512 = 1843.20; + 198.40 = 2041.60; × 0.95' }),
+  I('B4', 3, 'perimeter', 2, 'A play space is 3.5 m by 4 m. It needs at least 2 m of clear floor on every side.<br>What is the smallest rectangle of floor needed?', null, MU([['length (m)', 8], ['width (m)', 7.5]], { w: '4 + 2 + 2 and 3.5 + 2 + 2' })),
+  I('B5', 3, 'averages', 2, 'Distances in miles: 4, 7, 13, 9, 2, 3, 11, 8, 19, 6, 12, 21, 1, 5, 9, 14, 6, 3, 8, 10<br>Put them in the groups 1 to 5, 6 to 10, 11 to 15, 16 to 20 and 21 to 25. How many are in 6 to 10, 11 to 15 and 16 to 20?', null, MU([['6 to 10', 8], ['11 to 15', 4], ['16 to 20', 1]], { w: '1–5 has 6, 21–25 has 1' })),
+  I('B6', 6, 'area', 2, 'Maninder covers the shaded part of her garden with square slabs of side 600 mm. The lawn is not covered.<br>How many slabs does she need?', 55, { w: 'Area 6 × 4.2 − 3 × 1.8 = 19.8 m²; slab 0.36 m²', fig: FG.poly([[0, 0], [6, 0], [6, 4.2], [0, 4.2]], { s: { 0: '6000 mm', 1: '4200 mm' }, size: 230, extra: P => { const k = (P[1][0] - P[0][0]) / 6, x = P[0][0] + 3 * k, y = P[0][1]; return `<rect x="${x}" y="${y}" width="${3 * k}" height="${1.8 * k}" fill="var(--fig3,#C9F0D6)" stroke="currentColor" stroke-width="2"/><text x="${x + 1.5 * k}" y="${y + 0.9 * k + 5}" text-anchor="middle" class="sl sm">Lawn 3000 × 1800 mm</text>`; } }) }),
+  I('B7', 3, 'averages', 2, 'The bar chart shows the money lost to food waste each day. Work out the total for the week.', 1340, { pre: '£', w: '180 + 240 + 200 + 330 + 390', fig: FG.bar(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], [180, 240, 200, 330, 390], { ymax: 400, step: 50, yl: 'Money lost (£)' }) }),
+  I('B8a', 1, 'percentages', 2, 'Write 1⅖ as a percentage.', 140, { unit: '%', w: '1 = 100%, ⅖ = 40%' }),
+  I('B8b', 2, 'fractions', 2, 'Write 2⅓ as a decimal, correct to 2 decimal places.', 2.33, { dp: 2, w: '1 ÷ 3 = 0.333…' }),
+  I('B9', 4, 'substitution', 2, 'Time for a lift (seconds) = number of people × 87 ÷ 9. Natasha thinks 36 people will take more than 6 minutes. Is she correct?', 'No — it takes 5 minutes 48 seconds', MCx(['Yes — it takes 6 minutes 12 seconds', 'Yes — it takes 348 minutes', 'No — it takes 3 minutes 48 seconds'], '36 × 87 ÷ 9 = 348 s')),
+  I('B10', 3, 'perimeter', 2, 'Piping goes along every edge of a field. The edges are 72 m, 58 m, 40 m, 30 m, 32 m and 28 m. Piping costs £0.64 per metre.<br>Work out the total cost.', 166.4, { pre: '£', dp: 2, w: '260 m × £0.64' }),
+  I('B11a', 4, 'conversions', 2, 'On a map, 1 cm represents 0.75 km. The parts of a course measure 4.2 cm, 6.8 cm, 5.5 cm and 7.5 cm.<br>John says the course is more than 18 km long. Is he correct?', 'No — it is exactly 18 km', MCx(['Yes — it is 24 km', 'Yes — it is 18.75 km', 'No — it is 32 km'], '24 cm × 0.75')),
+  I('B11b', 1, 'decimals', 2, 'Write "eighty-six thousand five hundred and four" in figures.', 86504, W('86 thousand, 5 hundreds, 0 tens, 4 ones')),
+] });
+FSV({ id: 'FS-L1-10', level: 'L1', name: 'Level 1 · Set 10 style', model: 'Pearson Edexcel FS Maths Level 1 · Past Paper 10', items: [
+  SA(I('A1', 3, 'percentages', 2, '750 people were asked about holidays. 12% chose Greece. Samira thinks more than 100 people chose Greece. Is she correct?', 'No — 90 people chose Greece', MCx(['Yes — 120 people chose Greece', 'Yes — 112 people', 'No — 62 people'], '10% = 75, 2% = 15'))),
+  SA(I('A2', 3, 'conversions', 2, 'Norbert\'s shift starts on Tuesday at 7 pm and lasts 11 hours. He then has 28 hours off.<br>When does his next shift start?', 'Thursday 10 am', MCx(['Wednesday 10 am', 'Thursday 10 pm', 'Wednesday 6 pm'], 'Ends Wednesday 6 am; + 28 h = Thursday 10 am'))),
+  SA(I('A3a', 2, 'averages', 2, 'Work out the range of 238, 156, 402, 189, 327, 291', 246, W('402 − 156'))),
+  SA(I('A3b', 1, 'rounding', 2, 'Round 6.385 to 1 decimal place.', 6.4, W('8 rounds the 3 up'))),
+  SA(I('A3c', 1, 'conversions', 2, 'Convert 0.75 kilograms into grams.', 750, { unit: 'g', w: '× 1000' })),
+  SA(I('A4a', 3, 'rounding', 2, 'Usually 2 out of every 5 guests order room service. There are 789 guests. Round 789 to the nearest 100 and estimate how many will order room service.', 320, W('800 × 2 ÷ 5'))),
+  SA(I('A4b', 1, 'rounding', 2, 'Which reverse calculation checks your estimate?', '320 ÷ 2 × 5 = 800', MCx(['320 + 2 + 5 = 327', '800 × 5 ÷ 2 = 2000', '320 − 800 = −480'], 'Undo × 2 ÷ 5'))),
+  I('B1a', 2, 'decimals', 2, 'Profits: A two thirds of a million pounds; B £672 450; C six hundred and fifty-nine thousand pounds. Which made the most?', 'B (£672 450)', MCx(['A (£666 667)', 'C (£659 000)', 'A (£2 000 000)'], '⅔ × 1 000 000 = 666 667')),
+  I('B1b', 1, 'decimals', 2, 'Which list is in order, smallest first?', '3.074, 3.4, 3.407, 3.47, 3.7', MCx(['3.4, 3.47, 3.7, 3.074, 3.407', '3.7, 3.47, 3.407, 3.4, 3.074', '3.074, 3.407, 3.4, 3.47, 3.7'], 'Compare tenths, then hundredths')),
+  I('B2', 4, 'percentages', 2, 'Alex played 120 games and won 45%. Seamus played 75 games and won 52%. Alex thinks she won 15 more games than Seamus. Is she correct?', 'Yes — 54 against 39', MCx(['No — 54 against 44', 'No — 45 against 52', 'No — 60 against 39'], '0.45 × 120 = 54; 0.52 × 75 = 39')),
+  I('B3', 5, 'area', 2, 'Akeem is laying flooring in this L-shaped room. Each pack covers 0.45 m². How many packs does he need?', 54, { unit: 'packs', w: '6.2 × 4.5 − 2.4 × 1.5 = 24.3 m²; ÷ 0.45', fig: FG.poly([[0, 0], [6.2, 0], [6.2, 3], [3.8, 3], [3.8, 4.5], [0, 4.5]], { s: { 0: '6.2 m', 1: '3 m', 2: '2.4 m', 3: '1.5 m', 5: '4.5 m' }, size: 230 }) }),
+  I('B4a', 2, 'bearings', 2, 'A cave is south-west of a hostel. What is the bearing of the cave from the hostel?', 225, { unit: '°', w: 'South is 180°, south-west is 225°' }),
+  I('B4b', 1, 'probability', 2, 'The probability of sun on Friday is 7/10. Which word describes it best?', 'Likely', MCx(['Unlikely', 'Even chance', 'Certain'], 'More than ½ but not 1')),
+  I('B5', 3, 'averages', 2, 'Students studying sport each year: 15/16: 38, 16/17: 51, 17/18: 79, 18/19: 92, 19/20: 74.<br>Which year had the biggest increase on the year before, and by how much?', '17/18, up 28', MCx(['16/17, up 13', '18/19, up 13', '19/20, up 18'], '79 − 51 = 28')),
+  I('B6', 6, 'volume', 2, 'A pool is a cuboid 25 m by 12 m by 2 m. The water is 0.4 m below the top. 1 m³ = 1000 litres.<br>Chlorine (g) = litres ÷ 4000 × 45. How much chlorine is needed?', 5400, { unit: 'g', w: 'Water depth 1.6 m; 480 m³ = 480 000 litres', fig: FG.cuboid('25 m', '12 m', '2 m') }),
+  I('B7a', 1, 'conversions', 2, 'On a map 1 cm represents 4 km. Two cities are 6.5 cm apart. What is the real distance?', 26, { unit: 'km', w: '6.5 × 4' }),
+  I('B7b', 1, 'transformations', 2, 'How many lines of symmetry does a rectangle have?', 2, W('Across the middle both ways')),
+  I('B7c', 1, 'decimals', 2, 'Heights of a building: 41.6 m, 38.4 m, 40.9 m, 41.06 m. Which is the greatest?', '41.6 m', MCx(['41.06 m', '40.9 m', '38.4 m'], '41.60 > 41.06')),
+  I('B8a', 2, 'perimeter', 2, 'A triangle flower bed has sides 135 cm, 210 cm and 245 cm. Work out the length of edging needed.', 590, { unit: 'cm', w: '135 + 210 + 245' }),
+  I('B8b', 1, 'rounding', 2, 'Which is a sensible check?', '140 + 210 + 250 = 600', MCx(['135 × 3 = 405', '590 ÷ 3 = 197', '100 + 200 + 200 = 500, so 590 is wrong'], 'Round each side')),
+  I('B9', 4, 'averages', 2, 'Unsold sandwiches each day: 12, 21, 8, 14, 18, 13, 5. Each costs £2.10 to make.<br>Tim thinks the mean daily cost of unsold sandwiches is more than £28. Is he correct?', 'No — it is £27.30', MCx(['Yes — it is £28.70', 'Yes — it is £191.10', 'No — it is £13.00'], '91 × 2.10 ÷ 7')),
+  I('B10', 3, 'averages', 2, 'Treadmills in gyms: 6, 11, 5, 12, 7, 15, 13, 4, 8, 10, 12, 14. How many are in 1 to 5, 6 to 10 and 11 to 15?', null, MU([['1 to 5', 2], ['6 to 10', 4], ['11 to 15', 6]], { w: 'Tally each value' })),
+  I('B11', 5, 'percentages', 2, 'Offer A: clock £42.60 with 35% off. Offer B: clock £54.80 at half price.<br>Ashley thinks Offer B saves her less than 50p compared with Offer A. Is she correct?', 'Yes — B is 29p cheaper', MCx(['No — B is 71p cheaper', 'No — A is cheaper', 'Yes — B is 12p cheaper'], 'A: 42.60 × 0.65 = 27.69; B: 27.40')),
+] });
+FSV({ id: 'FS-L1-7', level: 'L1', name: 'Level 1 · Set 7 style', model: 'Pearson Edexcel FS Maths Level 1 · Past Paper 7', items: [
+  SA(I('A1a', 2, 'negatives', 2, 'Noon temperatures in five cities: −5 °C, 3 °C, −1 °C, 4 °C, 2 °C. Chen says the range is 8 °C. Is he correct?', 'No — the range is 9 °C', MCx(['Yes — the range is 8 °C', 'No — the range is 1 °C', 'No — the range is 6 °C'], '4 − (−5) = 9'))),
+  SA(I('A1b', 1, 'negatives', 2, 'Which reverse calculation checks the range?', '4 − 9 = −5', MCx(['4 + 9 = 13', '−5 − 9 = −14', '9 ÷ 5 = 1.8'], 'Highest − range = lowest'))),
+  SA(I('A2', 3, 'percentages', 2, 'Paulo invests £3000 for 6 years at 4% simple interest each year. Work out the total interest.', 720, { pre: '£', w: '£120 a year × 6' })),
+  SA(I('A3a', 1, 'probability', 2, 'The probability of an event is 3/10. Which word describes it best?', 'Unlikely', MCx(['Impossible', 'Evens', 'Likely'], 'Less than ½'))),
+  SA(I('A3b', 3, 'averages', 2, 'Calculate the mean of 512, 518, 509, 521', 515, W('2060 ÷ 4'))),
+  SA(I('A4', 4, 'percentages', 2, 'A bag holds 2.5 kg of pasta. A box holds 40% more than a bag. A customer buys 12 boxes. How many kilograms is that?', 42, { unit: 'kg', w: 'Box 3.5 kg × 12' })),
+  I('B1', 3, 'perimeter', 2, 'A box is 185 mm long and 132 mm wide. Ribbon goes once round the four sides. Jenni has 65 cm of ribbon. Is it long enough?', 'Yes — she needs 63.4 cm', MCx(['No — she needs 634 cm', 'No — she needs 68.4 cm', 'Yes — she needs 31.7 cm'], '2 × (185 + 132) = 634 mm')),
+  I('B2a', 2, 'probability', 2, 'A bag has 32 counters. 7 are green and the rest are orange. Work out P(orange).', [25, 32], FR('25 out of 32')),
+  I('B2b', 1, 'transformations', 2, 'How many lines of symmetry does a kite have?', 1, W('One, down the long diagonal')),
+  I('B2c', 1, 'angles', 2, 'An angle is 125°. What is the reflex angle around the same point?', 235, { unit: '°', w: '360 − 125' }),
+  I('B3a', 1, 'decimals', 2, 'Write "four thousand and sixty-eight" in figures.', 4068, W('4 thousands, 0 hundreds, 6 tens, 8 ones')),
+  I('B3b', 1, 'decimals', 2, 'Which shows 2057 in words?', 'two thousand and fifty-seven', MCx(['two thousand five hundred and seven', 'twenty thousand and fifty-seven', 'two hundred and fifty-seven'], '2 thousands, 0 hundreds, 5 tens, 7 ones')),
+  I('B3c', 3, 'averages', 2, 'Parcel weights: 24 kg, 12 kg, 2000 g, 9 kg, 27 kg, 1 kg, 15 kg, 4000 g, 22 kg, 18 kg, 2 kg, 30 kg, 500 g, 11 kg, 26 kg<br>How many are in 0 to 2 kg, 3 to 20 kg and 21 to 30 kg?', null, MU([['0 to 2 kg', 4], ['3 to 20 kg', 6], ['21 to 30 kg', 5]], { w: 'Change grams to kg first: 2000 g = 2 kg, 500 g = 0.5 kg' })),
+  I('B4', 3, 'bearings', 2, 'On a grid, 1 square = 10 cm. A robot moves 50 cm north, then turns to face 270° and moves 60 cm.<br>How many squares north and west of the start does it finish?', null, MU([['squares north', 5], ['squares west', 6]], { w: '270° is due west' })),
+  I('B5', 3, 'volume', 2, 'A cube has sides of 15 cm. Calculate its volume.', 3375, { unit: 'cm³', w: '15 × 15 × 15' }),
+  I('B6', 6, 'decimals', 2, 'Meter readings: last 18 476 kWh, now 20 156 kWh. Units cost 6.2p per kWh. Standing charge: 31 days at 18.5p a day. The bill says £109.90.<br>Is the bill correct?', 'Yes — £104.16 + £5.74 = £109.90', MCx(['No — it should be £104.16', 'No — it should be £110.40', 'No — it should be £1041.60'], '1680 × 6.2p = £104.16; 31 × 18.5p = £5.74')),
+  I('B7', 3, 'conversions', 2, 'A scale drawing uses 1 square = 2 cm. A triangle has base 30 cm and height 18 cm. How many squares is the base and the height?', null, MU([['base (squares)', 15], ['height (squares)', 9]], { w: '÷ 2' })),
+  I('B8', 3, 'proportion', 2, 'There must be 1 adult for every 12 students. Groups of 14, 19 and 23 students travel together. What is the least number of adults needed?', 5, W('56 ÷ 12 = 4.67 → round up')),
+  I('B9a', 3, 'percentages', 2, 'A coat is £186. Yolanda uses a 15% discount code. Work out the price after the discount.', 158.1, { pre: '£', dp: 2, w: '186 × 0.85' }),
+  I('B9b', 1, 'percentages', 2, 'Which is a check of your answer?', '158.10 ÷ 0.85 = 186', MCx(['158.10 × 0.15 = 23.72', '186 + 15 = 201', '158.10 − 15 = 143.10'], 'Reverse the multiplier')),
+  I('B10', 3, 'substitution', 2, 'Packets of food = rabbit\'s weight (kg) × 2.2 ÷ 2.75. Abi\'s rabbit weighs 7.5 kg. How many packets a day?', 6, W('7.5 × 2.2 = 16.5; ÷ 2.75')),
+  I('B11', 5, 'fractions', 2, '240 runners: ⅜ run for pet charities, 5/12 for health charities and the rest for youth charities. How many run for youth charities?', 50, W('90 + 100 = 190; 240 − 190')),
+] });
+FSV({ id: 'FS-L1-1', level: 'L1', name: 'Level 1 · Set 1 style', model: 'Pearson Edexcel FS Maths Level 1 · Past Paper 1', items: [
+  SA(I('A1a', 1, 'conversions', 2, 'Convert 4.5 metres into centimetres.', 450, { unit: 'cm', w: '× 100' })),
+  SA(I('A1b', 1, 'decimals', 2, 'Work out 5700 ÷ 100', 57, W('Move two places'))),
+  SA(I('A1c', 1, 'negatives', 2, 'Calculate 40 − 18 ÷ 6', 37, W('Divide first'))),
+  SA(I('A2', 3, 'rounding', 2, 'A wall needs 980 bricks. Each brick weighs 2.12 kg. There is a delivery charge if the total is over 2500 kg.<br>Use estimation: will Aaron pay the delivery charge?', 'No — about 1000 × 2 = 2000 kg', MCx(['Yes — about 1000 × 3 = 3000 kg', 'Yes — about 980 × 2.12 = 2770 kg', 'No — about 100 × 2 = 200 kg'], 'Round both numbers'))),
+  SA(I('A3a', 2, 'perimeter', 2, 'A rectangular field is 250 m long and 180 m wide. Calculate its perimeter.', 860, { unit: 'm', w: '2 × (250 + 180)' })),
+  SA(I('A3b', 2, 'decimals', 2, 'A farmer needs 150 m of fence. Each panel is 2.5 m long. How many panels?', 60, W('150 ÷ 2.5'))),
+  SA(I('A4', 4, 'decimals', 2, 'Over 5 years: petrol car £24 650 to buy plus £9200 running costs in total; diesel car £27 890 to buy plus £1150 running costs each year.<br>Which is better value?', 'Diesel — £33 640 against £33 850', MCx(['Petrol — £33 850 against £33 640', 'Petrol — £24 650 against £27 890', 'Diesel — £29 040 against £33 850'], 'Diesel: 27 890 + 5 × 1150'), { fig: FG.tbl(['', 'Petrol car', 'Diesel car'], [['Buying price', '£24 650', '£27 890'], ['Running cost', '£9200 for 5 years', '£1150 each year']], { rowHead: true }) })),
+  I('B1a', 2, 'ratio', 2, 'Johan sells 45 cups of tea and 18 cups of coffee. Write tea : coffee in its simplest form.', '5:2', { k: 'ratio', w: 'HCF 9' }),
+  I('B1b', 1, 'probability', 2, 'Johan puts sugar in 1 of 4 cups of tea. A customer picks one at random. How likely is it to have sugar?', 'Unlikely', MCx(['Even chance', 'Likely', 'Impossible'], '1 in 4 is less than ½')),
+  I('B2', 4, 'percentages', 2, 'Sam buys 16 chairs at £61 each plus 20% VAT. She has £1200. Is it enough?', 'Yes — they cost £1171.20', MCx(['No — they cost £1195.20', 'No — they cost £1217.60', 'Yes — they cost £976'], '16 × 61 = 976; × 1.2')),
+  I('B3', 5, 'area', 2, 'The garden is a 16 m by 8.5 m rectangle with a 4.2 m by 2.5 m pond. One box of seed covers 12 m². No seed goes on the pond.<br>How many boxes are needed?', 11, { w: '136 − 10.5 = 125.5 m²; ÷ 12 = 10.46 → 11', fig: FG.poly([[0, 0], [16, 0], [16, 8.5], [0, 8.5]], { s: { 0: '16 m', 1: '8.5 m' }, size: 230, extra: P => { const k = (P[1][0] - P[0][0]) / 16; return `<rect x="${P[0][0] + 9 * k}" y="${P[0][1] + 3 * k}" width="${4.2 * k}" height="${2.5 * k}" fill="var(--fig5,#CFE8FF)" stroke="currentColor" stroke-width="2"/><text x="${P[0][0] + 11.1 * k}" y="${P[0][1] + 4.25 * k + 5}" text-anchor="middle" class="sl sm">pond 4.2 × 2.5 m</text>`; } }) }),
+  I('B4', 3, 'substitution', 2, 'This rule changes °C to °F. Tomorrow it will be 24 °C. Dave thinks it will be more than 75 °F. Is he correct?', 'Yes — it will be 75.2 °F', Object.assign(MCx(['No — it will be 74.2 °F', 'No — it will be 43.2 °F', 'Yes — it will be 100.8 °F'], '24 × 1.8 + 32'), { fig: FG.machine(['× 1.8', '+ 32'], '°C', '°F') })),
+  I('B5', 3, 'averages', 2, 'Calls each day: Mon 260, Tue 150, Wed 195, Thu 90, Fri 230. Work out the mean number of calls per day.', 185, W('925 ÷ 5'), { fig: FG.tbl(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], [[260, 150, 195, 90, 230]]) }),
+  I('B6a', 5, 'averages', 2, 'Bags of flour (50 kg) used: week 1: 9, week 2: 12, week 3: 7, week 4: 15. In week 5 she makes 1800 loaves using 300 g each, buying whole bags.<br>Work out the mean number of bags per week over the 5 weeks.', 10.8, W('Week 5: 540 kg → 10.8 → 11 bags; (9 + 12 + 7 + 15 + 11) ÷ 5')),
+  I('B6b', 1, 'averages', 2, 'Which checks the mean?', '10.8 × 5 = 54', MCx(['10.8 + 5 = 15.8', '54 ÷ 4 = 13.5', '10.8 × 4 = 43.2'], 'Mean × number of weeks = total')),
+  I('B7', 3, 'conversions', 2, 'On a plan 1 cm represents 50 cm. A slide space is 3.5 m by 2 m. How big is it on the plan?', null, MU([['length (cm)', 7], ['width (cm)', 4]], { w: '350 ÷ 50 and 200 ÷ 50' })),
+  I('B8', 3, 'averages', 2, 'Hours of TV: 3, 17, 4, 4, 6, 11, 14, 14, 1, 20, 9, 8, 9, 6, 12, 7, 8, 13, 13, 9<br>Use groups 1–5, 6–10, 11–15, 16–20. Give the frequency of each group.', null, MU([['1–5', 4], ['6–10', 8], ['11–15', 6], ['16–20', 2]], { w: 'Tally each value' })),
+  I('B9', 4, 'volume', 2, 'A cuboid container is 60 cm by 45 cm and holds 150 litres. 1 litre = 1000 cm³. Work out its length to the nearest cm.', 56, { unit: 'cm', w: '150 000 ÷ 2700 = 55.6', fig: FG.cuboid('length', '45 cm', '60 cm') }),
+  I('B10a', 2, 'surface-area', 2, 'A net is made of 2 triangles and 3 rectangles. Which 3-D shape does it make?', 'Triangular prism', MCx(['Square-based pyramid', 'Cuboid', 'Cylinder'], 'Two triangle ends joined by three rectangles')),
+  I('B10b', 1, 'surface-area', 2, 'A cylinder stands on its circular base. What shape is its plan view?', 'Circle', MCx(['Rectangle', 'Triangle', 'Semicircle'], 'Seen from above')),
+  I('B11a', 4, 'percentages', 2, 'A house costs £280 000. The deposit is 12%. James has £27 500. How much more does he need?', 6100, { pre: '£', w: '12% = £33 600' }),
+  I('B11b', 1, 'percentages', 2, 'Which checks the percentage?', '33 600 ÷ 280 000 × 100 = 12', MCx(['280 000 − 12 = 279 988', '33 600 × 12 = 403 200', '27 500 + 6100 = 33 600, so 12% is right'], 'Turn the deposit back into a percentage')),
+] });
+
+/* =================== LEVEL 2 =================== */
+FSV({ id: 'FS-L2-10', level: 'L2', name: 'Level 2 · Set 10 style', model: 'Pearson Edexcel FS Maths Level 2 · Past Paper 10', items: [
+  SA(I('A1a', 1, 'fractions', 3, 'Write 45 as a fraction of 120 in its simplest form.', [3, 8], FR('45/120 = 3/8'))),
+  SA(I('A1b', 2, 'decimals', 3, 'Work out 23.46 + 5.879', 29.339, W('Line up the decimal points'))),
+  SA(I('A2', 3, 'fractions', 3, `Work out 6⅔ − 2¾. Give your answer as a mixed number.`, [47, 12], FR('80/12 − 33/12 = 47/12 = 3 11/12'))),
+  SA(I('A3', 4, 'percentages', 3, 'Offer A: 36 monthly payments of £22. Offer B: normal price £960, now 15% off. Which costs less?', 'Offer A — £792 against £816', MCx(['Offer B — £816 against £792', 'Offer B — £144 against £792', 'Offer A — £58 against £816'], 'A: 36 × 22; B: 960 − 144'))),
+  SA(I('A4', 6, 'area', 3, 'The floor of a concert space is a trapezium. Jack gets £14 for each m² from ticket sales. He gives ⅙ of the income to charity.<br>How much does he give?', 7000, { pre: '£', w: 'Area ½ × (90 + 60) × 40 = 3000 m²; × 14 = 42 000; ÷ 6', fig: FG.poly([[15, 0], [75, 0], [90, 40], [0, 40]], { s: { 0: '60 m', 2: '90 m' }, size: 230, extra: P => `<line x1="${P[0][0]}" y1="${P[0][1]}" x2="${P[0][0]}" y2="${P[3][1]}" stroke="currentColor" stroke-width="1.6" stroke-dasharray="5 4"/><text x="${P[0][0] + 8}" y="${(P[0][1] + P[3][1]) / 2}" class="sl acc">40 m</text>` }) })),
+  I('B1', 3, 'ratio', 3, 'Rent of £840 a month is shared 5 : 3. Marta pays the larger share. She thinks she will pay less than £520. Is she correct?', 'No — she pays £525', MCx(['Yes — she pays £504', 'Yes — she pays £315', 'No — she pays £560'], '840 ÷ 8 × 5')),
+  I('B2a', 1, 'averages', 3, 'The table shows phones sold to 50 customers. Work out the missing number.', 3, { w: 'Known cells add to 47', fig: FG.tbl(['Storage', 'Mini', 'Regular', 'Maxi'], [['64 GB', 6, 3, 5], ['128 GB', 8, 7, 4], ['256 GB', 5, 9, '?']], { rowHead: true }) }),
+  I('B2b', 2, 'probability', 3, 'Using the same table, a Mini customer is chosen at random. Find P(they bought 128 GB).', [8, 19], FR('Mini column: 6 + 8 + 5 = 19')),
+  I('B3', 4, 'perimeter', 3, 'A tent ceiling is a 3.4 m rectangle with a semicircle on each end (diameter 2.4 m). Garland goes round the edge. 1 m = 3.3 feet. Emma has 45 feet. Is it enough?', 'No — she needs about 47.3 feet', MCx(['Yes — she needs about 35.5 feet', 'Yes — she needs about 44.0 feet', 'No — she needs about 60.2 feet'], '2 × 3.4 + π × 2.4 = 14.34 m'), { fig: FG.stadium('3.4 m', '2.4 m') }),
+  I('B4a', 2, 'averages', 3, 'Jake\'s times (minutes): 63, 57, 60, 54, 58, 64. Tia\'s median is 58 minutes. Is Jake\'s median greater than Tia\'s?', 'Yes — Jake\'s median is 59', MCx(['No — Jake\'s median is 58', 'No — Jake\'s median is 57', 'Yes — Jake\'s median is 60'], '54, 57, 58, 60, 63, 64 → (58 + 60) ÷ 2')),
+  I('B4b', 1, 'averages', 3, 'Which checks the median?', 'Three times are below 59 and three are above', MCx(['59 × 6 = 354', 'The mean is also 59', '64 − 54 = 10'], 'The median splits the data in half')),
+  I('B5a', 1, 'averages', 3, 'Students who revised more got higher marks. What type of correlation is this?', 'Positive', MCx(['Negative', 'No correlation', 'Inverse'], 'Both go up together')),
+  I('B5c', 4, 'percentages', 3, 'Of the students who revised for more than 15 hours, these were their marks: 78, 64, 82, 71, 69, 88, 75, 70.<br>What percentage scored over 70 marks?', 62.5, { unit: '%', w: '5 out of 8 (70 is not over 70)' }),
+  I('B6', 3, 'percentages', 3, 'Alya used 520 kg of flour in April. In May she will make 15% more bread. How much flour does she need?', 598, { unit: 'kg', w: '520 × 1.15' }),
+  I('B7a', 2, 'conversions', 3, '50 mph is about 80 km/h. Use this to convert 70 mph to km/h.', 112, { unit: 'km/h', w: '70 ÷ 50 × 80' }),
+  I('B7b', 2, 'conversions', 3, 'A fuel tank holds 55 litres. 1 gallon = 4.546 litres. What is this in gallons, to 2 d.p.?', 12.1, { dp: 2, exact: 55 / 4.546, unit: 'gallons', w: '55 ÷ 4.546' }),
+  I('B8', 6, 'decimals', 3, 'A wall is 6.45 m long and 12 bricks high. Each brick is 215 mm long. Brick prices: £1.65, £1.80, £1.49, £1.65, £1.72, £1.65, £1.90, £1.49. Amir uses the mode price and pays £60 for other materials.<br>Work out the total cost.', 654, { pre: '£', w: '6450 ÷ 215 = 30 per row; 360 bricks × £1.65 + £60' }),
+  I('B9', 3, 'proportion', 3, '3 bricklayers take 4 hours to lay a wall. How long would 4 bricklayers take?', 3, { unit: 'hours', w: '12 worker-hours ÷ 4' }),
+  I('B10a', 2, 'powers-roots', 3, 'Work out √13.69 × 2.5²', 23.125, W('3.7 × 6.25')),
+  I('B10b', 1, 'fractions', 3, 'Write 5/16 as a decimal.', 0.3125, W('5 ÷ 16')),
+  I('B11', 5, 'substitution', 3, 'Pool volume V = 10dw + 15aw with w = 10 m, d = 2.2 m, a = 1.2 m. Two pumps remove 24.5 m³ and 21.5 m³ an hour together.<br>Ben thinks the pool will empty in less than 8.5 hours. Is he correct?', 'No — it takes about 8.7 hours', MCx(['Yes — it takes about 8.2 hours', 'Yes — it takes about 4.3 hours', 'No — it takes about 17.4 hours'], 'V = 220 + 180 = 400 m³; 400 ÷ 46')),
+  I('B12a', 5, 'averages', 3, 'August visits: 1–7: 10 clients, 8–14: 22, 15–21: 12, 22–28: 6 (50 clients). The August mean is 8% higher than July\'s.<br>Estimate the mean for July.', 12, { w: 'Midpoints 4, 11, 18, 25 → 648 ÷ 50 = 12.96; ÷ 1.08', fig: FG.freq('Number of visits', [['1 to 7', 10], ['8 to 14', 22], ['15 to 21', 12], ['22 to 28', 6]]) }),
+  I('B12b', 1, 'percentages', 3, 'Which reverse calculation checks your July mean?', '12 × 1.08 = 12.96', MCx(['12.96 × 1.08 = 14.00', '12 + 8 = 20', '12.96 − 8 = 4.96'], 'Increase July by 8% again')),
+] });
+FSV({ id: 'FS-L2-9', level: 'L2', name: 'Level 2 · Set 9 style', model: 'Pearson Edexcel FS Maths Level 2 · Past Paper 9', items: [
+  SA(I('A1', 3, 'rounding', 3, 'A tank holds 55 litres. Petrol costs 138.9p a litre. Shannan thinks filling it costs less than £75. Use estimation to decide.', 'No — about 55 × £1.40 = £77', MCx(['Yes — about 50 × £1.40 = £70', 'Yes — about 55 × £1.30 = £71.50', 'No — about 60 × £2 = £120'], 'Round the price to £1.40'))),
+  SA(I('A2', 3, 'percentages', 3, 'A car park has 1200 spaces. 240 are for staff. 5% of the rest are for disabled visitors. How many is that?', 48, W('960 × 5%'))),
+  SA(I('A3a', 2, 'averages', 3, 'Find the median of 6.34, 6.304, 6.4, 6.043, 6.38, 6.39, 6.3', 6.34, W('Order: 6.043, 6.3, 6.304, 6.34, …'))),
+  SA(I('A3b', 2, 'fractions', 3, `Work out ${B(5, 6)} − ${B(3, 8)}`, [11, 24], FR('20/24 − 9/24'))),
+  SA(I('A4', 6, 'area', 3, 'A plan of an extension is drawn at 1 : 50. The floor measures 9 cm by 7 cm on the plan. The mode of the builders\' prices is used, and a two-storey extension costs 1½ times the one-storey price per m².<br>Work out the cost of the floor area for the two-storey extension.', 33075, { pre: '£', w: '4.5 m × 3.5 m = 15.75 m²; mode £1400 × 1.5 = £2100', fig: FG.tbl(['Builder', 'A', 'B', 'C', 'D', 'E', 'F'], [['£ per m²', 1400, 1450, 1400, 1380, 1400, 1460]], { rowHead: true }) })),
+  I('B1', 3, 'proportion', 3, 'Workers do 8 hours a day and make 70 boxes an hour. An order is for 10 920 boxes. How many days are needed?', 20, W('560 a day; 10 920 ÷ 560 = 19.5 → 20')),
+  I('B2', 3, 'proportion', 3, '8 machines take 4.5 hours to fill a crate. How long do 6 machines take?', 6, { unit: 'hours', w: '36 machine-hours ÷ 6' }),
+  I('B3a', 3, 'averages', 3, 'Gas units used on ten January days: 18, 25, 14, 29, 21, 16, 27, 12, 23, 20. In October the range was 11. Jenson thinks October use was more consistent. Is he correct?', 'Yes — January\'s range is 17', MCx(['No — January\'s range is 9', 'No — January\'s range is 11', 'Yes — January\'s range is 29'], '29 − 12')),
+  I('B3b', 1, 'averages', 3, 'On the January days, gas use went down as the temperature went up. Jenson says there is no relationship. Is he right?', 'No — there is negative correlation', MCx(['Yes — there is no correlation', 'No — there is positive correlation', 'Yes — gas does not depend on temperature'], 'One goes up as the other goes down')),
+  I('B4', 3, 'percentages', 3, 'Waste sent for recycling: garden 198.4 t, wood 87.6 t, metal 41 t, glass and rubble 120.5 t, electrical 14.5 t. Total waste collected: 600 t.<br>What percentage was recycled? Give a whole number.', 77, { unit: '%', w: '462 ÷ 600' }),
+  I('B5', 5, 'perimeter', 3, 'A roundabout has diameter 18 m. Bulbs go on a circle 1 m in from the edge, one every 30 cm. Bulbs come in packs of 20. How many packs are needed?', 9, { w: 'Radius 8 m; C = 50.27 m; ÷ 0.3 = 167 bulbs; ÷ 20', fig: FG.roundabout('18 m', '1 m') }),
+  I('B6', 3, 'compound-measures', 3, 'A marathon is 26.2 miles. Andrew is 47 (qualifying time 3 h 05 min). He runs at 8.6 mph. He thinks he must run faster to qualify. Is he correct?', 'No — he would finish in about 3 h 03 min', MCx(['Yes — he would take about 3 h 16 min', 'Yes — he would take about 3 h 30 min', 'No — he would take about 2 h 30 min'], '26.2 ÷ 8.6 = 3.047 h')),
+  I('B7a', 3, 'surface-area', 3, 'A square-based pyramid has base 5 cm. Each triangular face has height 4.2 cm. Work out its total surface area.', 67, { unit: 'cm²', w: '25 + 4 × ½ × 5 × 4.2' }),
+  I('B7b', 1, 'surface-area', 3, 'A paint tin (cylinder) stands on its base. What shape is its plan view?', 'Circle', MCx(['Rectangle', 'Square', 'Oval with a line'], 'Looking down from above')),
+  I('B8a', 5, 'ratio', 3, 'Concrete mix of 2640 lb uses cement : sand : gravel = 1 : 3 : 4. Use 1 kg = 2.2 lb. How many kg of each?', null, MU([['cement (kg)', 150], ['sand (kg)', 450], ['gravel (kg)', 600]], { w: '2640 ÷ 2.2 = 1200 kg; ÷ 8 = 150' })),
+  I('B8b', 1, 'ratio', 3, 'Which checks the ratio?', '150 + 450 + 600 = 1200', MCx(['150 × 3 = 450, so gravel is 450', '1200 ÷ 3 = 400', '2640 − 1200 = 1440'], 'The parts must add to the total')),
+  I('B9a', 1, 'straight-line', 3, 'Write down the coordinates of point B.', null, Object.assign(MU([['x', 2], ['y', 3]], { w: 'Across 2, up 3' }), { fig: FG.coordGrid([[-4, 3, 'A'], [2, 3, 'B'], [2, -2, 'C']]) })),
+  I('B9b', 2, 'straight-line', 3, 'A, B and C are corners of a rectangle ABCD. What are the coordinates of D?', null, MU([['x', -4], ['y', -2]], { w: 'Below A, level with C' })),
+  I('B10', 3, 'volume', 3, 'A cone has radius 6 cm and height 9.5 cm. V = ⅓πr²h. Work out its volume (1 d.p.).', 358.1, { dp: 1, exact: 114 * Math.PI, unit: 'cm³', w: '⅓ × π × 36 × 9.5', fig: FG.cone('6 cm', '9.5 cm') }),
+  I('B11', 5, 'percentages', 3, 'Darius restores 4 tables and 10 chairs (free). Costs: 6 tins at £13.75, 12 m of fabric at £7.20 a metre, foam £95. He sells tables at £145 and chairs at £38.<br>Work out his percentage profit (1 d.p.).', 263.8, { dp: 1, exact: (960 - 263.9) / 263.9 * 100, unit: '%', w: 'Costs £263.90; sales £960; profit £696.10' }),
+  I('B12a', 3, 'averages', 3, 'Driving lessons: 1–15: 5 people, 16–30: 15, 31–45: 28, 46–60: 12 (60 people). Jasmine estimates the mean is more than 35. Is she correct?', 'No — the estimated mean is 34.75', MCx(['Yes — it is 35.25', 'Yes — it is 38', 'No — it is 30.5'], 'Midpoints 8, 23, 38, 53 → 2085 ÷ 60'), { fig: FG.freq('Number of lessons', [['1 to 15', 5], ['16 to 30', 15], ['31 to 45', 28], ['46 to 60', 12]]) }),
+  I('B12b', 1, 'averages', 3, 'Which checks the mean?', '34.75 × 60 = 2085', MCx(['34.75 ÷ 60 = 0.58', '2085 − 60 = 2025', '34.75 + 60 = 94.75'], 'Mean × total frequency')),
+  I('B12c', 2, 'probability', 3, 'One of the 60 people is chosen at random. Find P(more than 30 lessons) as a decimal (2 d.p.).', 0.67, { dp: 2, exact: 40 / 60, w: '(28 + 12) ÷ 60' }),
+] });
+FSV({ id: 'FS-L2-1', level: 'L2', name: 'Level 2 · Set 1 style', model: 'Pearson Edexcel FS Maths Level 2 · Past Paper 1', items: [
+  SA(I('A1a', 2, 'decimals', 3, 'Work out 6.4 × 8.5', 54.4, W('64 × 85 = 5440'))),
+  SA(I('A1b', 1, 'powers-roots', 3, 'Work out 5 × 4²', 80, W('Square first'))),
+  SA(I('A2', 3, 'negatives', 3, 'A bank balance is −£86.40. Then £1452.75 is paid in and £638.90 is paid out. What is the new balance?', 727.45, { pre: '£', dp: 2, w: '−86.40 + 1452.75 − 638.90' })),
+  SA(I('A3', 4, 'rounding', 3, 'A window is a 120 cm by 150 cm rectangle with a semicircle on top (diameter 120 cm). Trim goes all the way round the outside.<br>Akash estimates he needs 650 cm. Using π ≈ 3, is this sensible?', 'Yes — about 600 cm is needed', MCx(['No — about 780 cm is needed', 'No — about 420 cm is needed', 'Yes — about 960 cm is needed'], '150 + 150 + 120 + ½ × 3 × 120 = 600'))),
+  SA(I('A4a', 4, 'averages', 3, 'Winter lateness (minutes): 9, 28, 41, 6, 15, 52, 11, 13, 10, 24. Work out the median and the range.', null, MU([['median', 14], ['range', 46]], { w: 'Order: 6, 9, 10, 11, 13, 15, …' }))),
+  SA(I('A4b', 2, 'averages', 3, 'In summer the median was 14.5 minutes and the range 20. Calvin says in winter the median goes up and the service is less consistent. Is he correct?', 'Partly — less consistent (range 46) but the median falls to 14', MCx(['Yes — both are true', 'No — winter is more consistent', 'Yes — the median rises to 24'], 'Compare each measure'))),
+  I('B1', 3, 'percentages', 3, 'Adam earns £9.45 an hour. He works 7 hours at time-and-a-half. How much is he paid?', 99.23, { pre: '£', dp: 2, w: '9.45 × 1.5 × 7 = 99.225' }),
+  I('B2', 3, 'volume', 3, 'A square-based pyramid has base sides 7.2 cm and height 10.5 cm. Volume = ⅓ × base area × height.', 181.44, { unit: 'cm³', w: '51.84 × 10.5 ÷ 3', fig: FG.pyramid('7.2 cm', '10.5 cm') }),
+  I('B3a', 3, 'proportion', 3, 'Rana gave £240 to each of 5 charities. This year she shares the same total equally between 8 charities. How much does each get?', 150, { pre: '£', w: '£1200 ÷ 8' }),
+  I('B3b', 1, 'proportion', 3, 'Which reverse calculation checks your answer?', '150 × 8 = 1200 = 240 × 5', MCx(['150 + 8 = 158', '240 − 150 = 90', '1200 × 8 = 9600'], 'Both totals should match')),
+  I('B4', 3, 'angles', 3, 'ABC is a straight line. Use the diagram to find x, then use the table to find the roof pitch.', null, Object.assign(MU([['x (degrees)', 30], ['pitch', 7]], { w: '180 − 150 = 30°; 30° is pitch 7' }), { fig: FG.rays([30], ['150°', 'x'], { letters: ['A', 'B', 'C'] }) + FG.tbl(['Pitch', '5', '6', '7', '8', '9'], [['Angle', '22.5°', '26.5°', '30°', '33.75°', '37°']], { rowHead: true }) })),
+  I('B5', 5, 'area', 3, 'A roof has 4 identical triangular faces, each base 6.4 m and height 5.5 m. A pack of tiles covers 12.5 m² and costs £685.50. Only whole packs can be bought.<br>Work out the total cost.', 4113, { pre: '£', w: '4 × 17.6 = 70.4 m²; 5.63 → 6 packs' }),
+  I('B6', 3, 'percentages', 3, 'A jacket was £42.50 and is now £24.65. The website says this is a 42% saving. Is it?', 'Yes — £17.85 is 42% of £42.50', MCx(['No — it is a 58% saving', 'No — it is a 72% saving', 'No — it is a 24% saving'], '(42.50 − 24.65) ÷ 42.50')),
+  I('B7a', 2, 'conversions', 3, 'A scale drawing uses 1 cm to 40 m. AD measures 6.3 cm. What is the real length?', 252, { unit: 'm', w: '6.3 × 40' }),
+  I('B7b', 2, 'conversions', 3, 'Side BC is 220 m. How long is BC on the drawing?', 5.5, { unit: 'cm', w: '220 ÷ 40' }),
+  I('B8a', 4, 'conversions', 3, 'A country has area 52 300 square miles (1 square mile = 2.6 km²) and its population rose 8.5% from 9.8 million. Round area to the nearest 10 thousand km² and population to the nearest million.', null, MU([['area (thousand km²)', 140], ['population (millions)', 11]], { w: '52 300 × 2.6 = 135 980; 9.8 × 1.085 = 10.6' })),
+  I('B8b', 2, 'averages', 3, 'Countries with more land usually have more people. What correlation is this?', 'Positive', MCx(['Negative', 'None', 'Zero'], 'Both increase together')),
+  I('B9', 3, 'substitution', 3, 'Density K = P ÷ (2.59 × M), with P in millions of people and M in millions of square miles. Canada\'s density is 3.57. Australia: P = 26.0, M = 2.97.<br>Magda thinks Australia\'s density is greater than Canada\'s. Is she correct?', 'No — Australia\'s is about 3.38', MCx(['Yes — about 22.7', 'Yes — about 8.75', 'No — about 0.38'], '26.0 ÷ (2.59 × 2.97)')),
+  I('B10a', 2, 'fractions', 3, 'Work out 4⅝ − 11/8 as a mixed number.', [13, 4], FR('37/8 − 11/8 = 26/8 = 3¼')),
+  I('B10b', 1, 'rounding', 3, 'Which is a sensible estimate check?', '4.6 − 1.4 ≈ 3.2', MCx(['5 + 1 = 6', '4 × 11 = 44', '8 − 8 = 0'], 'Use decimals')),
+  I('B11', 5, 'ratio', 3, 'A fence needs 3 horizontal pieces of 2 m, 2 tall pieces of 1.5 m, 4 medium pieces and 6 short pieces. tall : medium : short = 10 : 8 : 6.<br>How many metres of metal are needed?', 19.2, { unit: 'm', w: 'Medium 1.2 m, short 0.9 m; 6 + 3 + 4.8 + 5.4' }),
+  I('B12a', 2, 'probability', 3, 'Complete the table: how many families chose room only, and how many holidays in total were all-inclusive?', null, Object.assign(MU([['families, room only', 4], ['all-inclusive total', 32]], { w: 'Families: 26 − 8 − 14; couples AI: 34 − 4 − 12 = 18' }), { fig: FG.tbl(['', 'Room only', 'B&B', 'All-inclusive', 'Total'], [['Couples', 4, 12, '', 34], ['Families', '', 8, 14, 26], ['Total', '', 20, '', 60]], { rowHead: true }) })),
+  I('B12b', 2, 'probability', 3, 'A customer is chosen at random. Find P(all-inclusive holiday for a couple).', [3, 10], FR('18 out of 60')),
+  I('B12c', 2, 'probability', 3, 'The agent says couples were more likely than families to choose all-inclusive. Is this correct?', 'No — couples 18/34 ≈ 0.53, families 14/26 ≈ 0.54', MCx(['Yes — couples 18/34 ≈ 0.53, families 14/26 ≈ 0.54', 'Yes — 18 is more than 14', 'No — families 14/60, couples 18/60'], 'Compare proportions, not totals')),
+] });
+
+/* name/series fields for the picker */
+DIAG.FS.forEach(v => { v.series = FSL[v.level].name; v.plabel = 'Set'; v.sort = 0; });
 </script>
 <script>/* =========================================================
    GCSE MATHS QUEST — APP
@@ -3375,9 +3710,9 @@ let view = 'home', vp = {}, sess = null, tick = null;
 function go(v, p = {}) { if (tick && v !== 'play') { clearInterval(tick); tick = null; } view = v; vp = p; render(); window.scrollTo(0, 0); }
 function render() {
   applySettings();
-  const scr = { home, pick, cat: catScreen, topic: topicScreen, play, results, progress, challenge, badges, settings, lesson: lessonView, learn: learnScreen, diagpick: diagPick, diagres: diagRes, diagtime: diagTime }[view] || home;
+  const scr = { home, pick, cat: catScreen, topic: topicScreen, play, results, progress, challenge, badges, settings, lesson: lessonView, learn: learnScreen, diagpick: diagPick, diagres: diagRes, diagtime: diagTime, fstime: fsTime }[view] || home;
   app.innerHTML = scr();
-  const nav = document.getElementById('nav'); nav.hidden = view === 'play' || view === 'lesson' || view === 'diagtime';
+  const nav = document.getElementById('nav'); nav.hidden = view === 'play' || view === 'lesson' || view === 'diagtime' || view === 'fstime';
   nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-current', b.dataset.arg === view || (view === 'cat' || view === 'topic' || view === 'pick' || view === 'results' || view === 'learn' || view === 'diagpick' || view === 'diagres') && b.dataset.arg === 'home' ? 'page' : 'false'));
   afterRender();
 }
@@ -3481,7 +3816,7 @@ function endSession() {
 }
 /* ---------- Exam flow ---------- */
 function saveExamInput() { const q = sess.q; if (q.kind === 'mc') return; const v = readInput(); sess.ans[sess.i] = (Array.isArray(v) ? v.some(x => x.trim() !== '') : v.trim() !== '') ? v : null; }
-function examMove(d) { saveExamInput(); sess.i = Math.max(0, Math.min(15, sess.i + d)); sess.q = sess.qs[sess.i]; render(); }
+function examMove(d) { saveExamInput(); sess.i = Math.max(0, Math.min(sess.qs.length - 1, sess.i + d)); sess.q = sess.qs[sess.i]; render(); }
 function examJump(i) { saveExamInput(); sess.i = i; sess.q = sess.qs[i]; render(); }
 function submitExam() {
   if (tick) { clearInterval(tick); tick = null; }
@@ -3858,7 +4193,7 @@ document.getElementById('nav').innerHTML = `<div>${[['home', 'home', 'Home'], ['
    DIAGNOSTIC UI — choose a variant, sit it timed, get a
    report with strand scores, a grade and targets.
    ========================================================= */
-MODES.unshift({ id: 'diag', n: 'Diagnostic test', i: '', d: 'Timed AQA or Eduqas test that sets targets', c: '' });
+MODES.unshift({ id: 'diag', n: 'Diagnostic test', i: '', d: 'Timed GCSE or Functional Skills test that sets targets', c: '' });
 MODE_IC.diag = 'chart';
 const LETTERS = 'ABCDEF';
 const fmtTime = s => `${Math.floor(s / 60)} min ${String(s % 60).padStart(2, '0')} s`;
@@ -3929,7 +4264,7 @@ function diagText(rep) {
 }
 function diagCSV() {
   const rows = [['Name', 'Group', 'Date', 'Board', 'Tier', 'Paper', 'Mirrors', 'Extra time', 'Score before extra time', 'Score', 'Total', 'Percent', 'Working at', 'Target', ...Object.keys(STRANDS).map(k => k + ' %'), 'Target topics']];
-  (S.diags || []).forEach(r => { const d = diagReport(r); rows.push([r.name || '', r.group || '', r.date, d.v.board, TIERS[r.tier].name, d.v.name, d.v.model, r.extra ? r.extra.mins + ' min' : 'No', r.extra ? r.extra.stdScore : r.score, r.score, r.total, r.pct, r.grade < 1 ? 'U' : r.grade, d.target, ...Object.keys(STRANDS).map(k => r.strands[k] && r.strands[k].tot ? Math.round(r.strands[k].got / r.strands[k].tot * 100) : ''), d.priority.map(x => TOPIC(x.id).name).join('; ')]); });
+  (S.diags || []).forEach(r => { const d = diagReport(r); rows.push([r.name || '', r.group || '', r.date, d.v.board, r.fs ? FSL[r.level].name : TIERS[r.tier].name, d.v.name, d.v.model, r.extra ? r.extra.mins + ' min' : 'No', r.extra ? r.extra.stdScore : r.score, r.score, r.total, r.pct, r.fs ? r.result : r.grade < 1 ? 'U' : r.grade, r.fs ? fsNext(r) : d.target, ...Object.keys(STRANDS).map(k => r.strands[k] && r.strands[k].tot ? Math.round(r.strands[k].got / r.strands[k].tot * 100) : ''), d.priority.map(x => TOPIC(x.id).name).join('; ')]); });
   return rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n');
 }
 function copyText(txt, label) {
@@ -3987,14 +4322,14 @@ home = function () {
   let html = _home();
   const tg = S.targets;
   const card = tg ? `<article class="card focus"><div class="row between wrapf"><div class="kicker">Your targets${tg.name ? ' · ' + esc(tg.name) : ''}</div><span class="count">Set ${tg.date}</span></div><h2>Working at grade ${tg.grade < 1 ? 'U' : tg.grade} → aiming for grade ${tg.target}</h2><p class="small mut">From your ${TIERS[tg.tier].name} diagnostic. Learn each topic, then practise it.</p><div class="row wrapf">${tg.topics.map(id => `<button class="pillbtn" data-act="topic" data-arg="${id}">${ic(learned(id) ? 'check' : 'book', 14)} ${TOPIC(id).name}</button>`).join('') || '<span class="small">No gaps found — try a harder variant.</span>'}</div><div class="cardfoot">${lnk('mode', 'diag', 'Re-test with a different variant')}</div></article>`
-    : `<article class="card focus"><div class="kicker">Start here</div><h2>Take a diagnostic test</h2><p class="mut">A timed test built from real AQA and Eduqas past papers. It finds your working grade and sets your targets.</p>${meta('clock', '30–60 minutes')}${meta('file', `${DIAG.F.length + DIAG.H.length} papers to choose from`)}<div class="cardfoot">${lnk('mode', 'diag', 'Choose a test')}</div></article>`;
+    : `<article class="card focus"><div class="kicker">Start here</div><h2>Take a diagnostic test</h2><p class="mut">A timed test built from real AQA, Eduqas and Pearson Functional Skills papers. It finds your working level and sets your targets.</p>${meta('clock', '30–115 minutes')}${meta('file', `${DIAG.F.length + DIAG.H.length + DIAG.FS.length} papers to choose from`)}<div class="cardfoot">${lnk('mode', 'diag', 'Choose a test')}</div></article>`;
   return html.replace('<div class="grid2">', card + '<div class="grid2">');
 };
 const _progress = progress;
 progress = function () {
   const ds = S.diags || [];
   const hist = `<article class="card"><div class="row between wrapf"><h2 style="margin:0">Diagnostic tests</h2>${ds.length ? `<button class="btn sm sec" data-act="dcsv">${ic('file', 16)} Copy all results (CSV)</button>` : ''}</div>
-   ${ds.length ? ds.map((r, i) => ({ r, i })).reverse().map(({ r, i }) => `<div class="rowline"><span><b>${r.name ? esc(r.name) : 'No name'}</b> <span class="small mut">${r.date} · ${TIERS[r.tier].name} ${diagVariant(r.vid).name} · ${r.score}/${r.total} · grade ${r.grade < 1 ? 'U' : r.grade}</span></span>${lnk('dopen', i, 'Report')}</div>`).join('') : `<p class="small mut">No diagnostic tests yet.</p>${lnk('mode', 'diag', 'Take one')}`}</article>`;
+   ${ds.length ? ds.map((r, i) => ({ r, i })).reverse().map(({ r, i }) => `<div class="rowline"><span><b>${r.name ? esc(r.name) : 'No name'}</b> <span class="small mut">${r.date} · ${r.fs ? 'Functional Skills ' + diagVariant(r.vid).name + ' · ' + r.score + '/' + r.total + ' · ' + r.result : TIERS[r.tier].name + ' ' + diagVariant(r.vid).name + ' · ' + r.score + '/' + r.total + ' · grade ' + (r.grade < 1 ? 'U' : r.grade)}</span></span>${lnk('dopen', i, 'Report')}</div>`).join('') : `<p class="small mut">No diagnostic tests yet.</p>${lnk('mode', 'diag', 'Take one')}`}</article>`;
   return _progress().replace('<article class="card"><h2>Work on these next</h2>', hist + '<article class="card"><h2>Work on these next</h2>');
 };
 const _play = play;
@@ -4109,7 +4444,7 @@ submitExam = function () {
     rep.extra = { mins: x.mins, used: x.secs - Math.max(0, sess.time), stdItems, stdScore, stdPct: Math.round(stdScore / rep.total * 100), stdGrade: diagGrade(stdScore / rep.total * 100, rep.tier, v.board), log: x.log };
   }
   save();
-  sendResult(i).then(() => { if (view === 'diagres' && vp.i === i) render(); });
+  setTimeout(() => sendResult(i).then(() => { if (view === 'diagres' && vp.i === i) render(); }), 0);
   render();
 };
 
@@ -4220,6 +4555,232 @@ settings = function () {
     <div class="row wrapf" style="gap:10px;margin-top:10px"><button class="btn sm" data-act="tsave">Save link</button><button class="btn sm sec" data-act="ttest" ${u ? '' : 'disabled'}>Send a test row</button><button class="btn sm sec" data-act="tlink" ${u ? '' : 'disabled'}>Copy student link</button></div>
     <p class="small mut" style="margin-top:8px">Status: ${u ? 'results will be sent' : 'no link set, so results stay on this device'}.</p></article>`;
   return _settingsD().replace(/<\/main>\s*$/, card + '</main>');
+};
+</script>
+<script>/* =========================================================
+   FUNCTIONAL SKILLS UI — picker, two timed sections,
+   extra time across both sections, report and sending.
+   ========================================================= */
+const FS_BOARD = 'Functional Skills';
+const isFS = v => !!v && v.board === FS_BOARD;
+const _diagVariantF = diagVariant;
+diagVariant = function (id) { return _diagVariantF(id) || DIAG.FS.find(v => v.id === id); };
+const _diagMinutesF = diagMinutes;
+diagMinutes = function (v) { return isFS(v) ? FSL[v.level].aMin + FSL[v.level].bMin : _diagMinutesF(v); };
+const fsX = m => Math.ceil(m * EXTRA_PCT / 100);
+
+/* ---------- picker ---------- */
+const _diagPickF = diagPick;
+diagPick = function () {
+  const board = vp.board || S.diagBoard || 'AQA';
+  if (board !== FS_BOARD) return _diagPickF().replace(/(>Eduqas<\/button>)(<\/div>)/, `$1<button data-act="dboard" data-arg="${FS_BOARD}" aria-pressed="false">Functional Skills</button>$2`);
+  const lv = vp.level || S.fsLevel || 'L1', L = FSL[lv];
+  const list = DIAG.FS.filter(v => v.level === lv), past = id => (S.diags || []).filter(d => d.vid === id);
+  const seg = (act, opts, cur, label) => `<div class="seg" role="group" aria-label="${label}">${opts.map(([k, n]) => `<button data-act="${act}" data-arg="${k}" aria-pressed="${cur === k}">${n}</button>`).join('')}</div>`;
+  return `${header()}<main class="wrapx">${backBtn('nav', 'home', 'Home')}<h1 class="pageh">Diagnostic test</h1>
+  <p class="lead dark">Functional Skills Maths, Pearson Edexcel. Each test follows a real Pearson paper: Section A without a calculator, then Section B with a calculator. It shows whether you are working at the pass standard, and which skills to practise.</p>
+  <article class="card"><div class="grid2" style="margin:0">
+    <div>${meta('target', 'Same contexts and skills as the real paper, with new numbers')}${meta('clock', `Section A ${L.aMin} min, then Section B ${L.bMin} min. Extra time can be added`)}${meta('chart', 'Marked instantly, and sent to your teacher')}</div>
+    <div><label class="small mut" for="dname">Your full name (required)</label><label class="ans" style="margin-top:6px"><input id="dname" autocomplete="name" placeholder="e.g. Sam Khan" value="${esc(S.diagName || '')}"></label>
+    <label class="small mut" for="dgroup" style="display:block;margin-top:10px">Class or group (optional)</label><label class="ans" style="margin-top:6px"><input id="dgroup" autocomplete="off" placeholder="e.g. Level 1 Maths, Tuesday" value="${esc(S.diagGroup || '')}"></label></div>
+  </div></article>
+  <div class="center" style="margin:6px 0 8px"><div class="small mut" style="margin-bottom:6px">Exam board</div>${seg('dboard', [['AQA', 'AQA'], ['Eduqas', 'Eduqas'], [FS_BOARD, 'Functional Skills']], board, 'Exam board')}</div>
+  <div class="center" style="margin:0 0 16px"><div class="small mut" style="margin-bottom:6px">Level</div>${seg('dlevel', [['E3', 'Entry 3'], ['L1', 'Level 1'], ['L2', 'Level 2']], lv, 'Level')}</div>
+  <h2 class="pageh" style="font-size:1.25rem;margin:18px 0 8px">Pearson Edexcel ${L.name}</h2>
+  <div class="grid3 dgrid">${list.map(v => { const p = past(v.id), last = p[p.length - 1], nA = v.items.filter(i => i.sec === 'A').length; return `<article class="card hov"><div class="row between"><h3 style="margin:0">${v.name.split('·')[1].trim()}</h3><span class="count">${L.total} marks</span></div>
+    <p class="small mut" style="margin:6px 0 4px">Mirrors ${v.model}</p>
+    ${meta('file', `${v.items.length} questions · pass mark about ${L.pass}`)}${meta('clock', `A: ${nA} questions, ${L.aMin} min · B: ${v.items.length - nA} questions, ${L.bMin} min`)}${last ? meta('check', `Last: ${last.name ? esc(last.name) + ' — ' : ''}${last.score}/${last.total}, ${last.result || ''}`) : ''}
+    <div class="cardfoot">${lnk('dstart', v.id, 'Start test')}${p.length ? lnk('dopen', (S.diags || []).lastIndexOf(last), 'Last report') : ''}</div></article>`; }).join('')}</div>
+  <article class="card note"><div><b>Teacher tip:</b> not sure which level to use? Start a learner on the level below the one they are booked for. If they reach the pass standard comfortably, move them up.</div></article></main>`;
+};
+
+/* ---------- starting and timing ---------- */
+const _startF = start;
+start = function (cfg) {
+  _startF(cfg);
+  const v = cfg.diag && diagVariant(cfg.diag);
+  if (!isFS(v) || !sess) return;
+  const L = FSL[v.level], nA = v.items.filter(i => i.sec === 'A').length;
+  sess.fs = { phase: 'A', nA, aMin: L.aMin, bMin: L.bMin, aX: fsX(L.aMin), bX: fsX(L.bMin), ext: false, inX: false, usedX: 0, xstash: null, state: '' };
+  sess.time = L.aMin * 60;
+  if (tick) clearInterval(tick); tick = fsTick(); render();
+};
+function fsTick() {
+  return setInterval(() => {
+    if (view !== 'play' || !sess || sess.done || !sess.fs) return;
+    const f = sess.fs; sess.time--; if (f.inX) f.usedX++;
+    if (f.phase === 'B' && f.ext && !f.inX && f.xstash && sess.time <= f.bX * 60) {
+      saveExamInput(); const x = f.xstash;
+      for (let i = f.nA; i < sess.ans.length; i++) { x.snap[i] = cloneA(sess.ans[i]); x.last[i] = cloneA(sess.ans[i]); }
+      sess.extra = x; f.xstash = null; f.inX = true; render();
+      toast('', 'Normal time for Section B is over. You are now in your extra time — changes are logged.');
+    }
+    const el = document.getElementById('timer'); if (el) { el.textContent = clock(sess.time); el.classList.toggle('low', sess.time <= 300); }
+    if (sess.time === 300) toast('', `5 minutes left in Section ${f.phase}.`);
+    if (sess.time <= 0) { clearInterval(tick); tick = null; fsTimeUp(); }
+  }, 1000);
+}
+function fsTimeUp() {
+  const f = sess.fs; saveExamInput(); logExtra();
+  if (f.phase === 'A') { if (f.ext) return fsToB(); f.state = 'A'; return go('fstime'); }
+  if (f.ext) return submitExam();
+  f.state = 'B'; go('fstime');
+}
+function fsToB() {
+  const f = sess.fs; if (view === 'play') saveExamInput(); logExtra();
+  f.phase = 'B'; sess.i = f.nA; sess.q = sess.qs[f.nA];
+  if (f.ext) { f.xstash = sess.extra; sess.extra = null; f.inX = false; sess.time = (f.bMin + f.bX) * 60; }
+  else sess.time = f.bMin * 60;
+  go('play'); if (tick) clearInterval(tick); tick = fsTick();
+  toast('', 'Section A is handed in. Section B has started — you may now use a calculator.');
+}
+function fsTime() {
+  if (!sess || !sess.fs || sess.done) return home();
+  const f = sess.fs, ansA = sess.ans.slice(0, f.nA).filter(a => a != null).length, ansB = sess.ans.slice(f.nA).filter(a => a != null).length;
+  let title, lead, btns, note = '';
+  if (f.state === 'Aearly') {
+    title = 'Finish Section A?'; lead = `You have answered ${ansA} of ${f.nA} questions in Section A. Once you move on, you cannot come back to Section A.`;
+    btns = `<button class="btn" data-act="fsgoB">${ic('check', 18)} Hand in Section A and start Section B</button><button class="btn sec" data-act="fsback">${ic('back', 18)} Go back to Section A</button>`;
+  } else if (f.state === 'A') {
+    title = 'Section A — time\'s up'; lead = `You answered ${ansA} of ${f.nA} questions in the normal ${f.aMin} minutes.`;
+    btns = `<button class="btn" data-act="fsgoB">${ic('check', 18)} Hand in Section A and start Section B</button><button class="btn sec" data-act="fsxA">${ic('clock', 18)} I have extra time: add ${f.aX} min now (and ${f.bX} min to Section B)</button>`;
+    note = 'Extra time is for learners with an access arrangement (usually 25%). Your teacher will see that you used it, your score at the end of normal time, and every answer you add or change during it.';
+  } else {
+    title = 'Section B — time\'s up'; lead = `You answered ${ansB} of ${sess.qs.length - f.nA} questions in the normal ${f.bMin} minutes.`;
+    btns = `<button class="btn" data-act="dhandin">${ic('check', 18)} Hand in my paper</button><button class="btn sec" data-act="fsxB">${ic('clock', 18)} I have extra time: add ${f.bX} minutes</button>`;
+    note = 'Extra time is for learners with an access arrangement (usually 25%). Your teacher will see that you used it and every answer you add or change during it.';
+  }
+  return `${header()}<main class="wrapx"><article class="card focus" style="text-align:center"><div class="kicker">Functional Skills diagnostic</div><h1 class="pageh" style="margin-top:6px">${title}</h1>
+    <p class="lead dark" style="margin:0 auto 14px">${lead}</p><div class="grid2">${btns}</div>${note ? `<p class="small mut" style="margin-top:14px">${note}</p>` : ''}</article></main>`;
+}
+Object.assign(ACT, {
+  dlevel: a => { vp.level = a; S.fsLevel = a; save(); render(); },
+  fsfinA: () => { saveExamInput(); sess.fs.state = 'Aearly'; go('fstime'); },
+  fsback: () => go('play'),
+  fsgoB: () => fsToB(),
+  fsxA: () => {
+    const f = sess.fs; if (f.ext) return;
+    const snap = sess.ans.map(cloneA);
+    f.ext = true; f.inX = true; sess.extra = { mins: f.aX + f.bX, secs: (f.aX + f.bX) * 60, snap, last: snap.map(cloneA), log: [] };
+    sess.time = f.aX * 60; go('play'); if (tick) clearInterval(tick); tick = fsTick();
+    toast('', `Extra time started: ${f.aX} minutes for Section A. Section B will also have ${f.bX} extra minutes.`);
+  },
+  fsxB: () => {
+    const f = sess.fs; if (f.ext) return;
+    const snap = sess.ans.map(cloneA);
+    f.ext = true; f.inX = true; sess.extra = { mins: f.bX, secs: f.bX * 60, snap, last: snap.map(cloneA), log: [] };
+    sess.time = f.bX * 60; go('play'); if (tick) clearInterval(tick); tick = fsTick();
+    toast('', `Extra time started: ${f.bX} minutes. Every answer you add or change is logged for your teacher.`);
+  },
+});
+
+/* ---------- keep learners inside the current section ---------- */
+const _examJumpF = examJump;
+examJump = function (i) {
+  if (sess && sess.fs) { const f = sess.fs; if (f.phase === 'A' && i >= f.nA) { toast('', 'Finish Section A first.'); return; } if (f.phase === 'B' && i < f.nA) { toast('', 'Section A has been handed in.'); return; } }
+  _examJumpF(i);
+};
+const _examMoveF = examMove;
+examMove = function (d) {
+  if (sess && sess.fs) { const f = sess.fs, to = sess.i + d; if (f.phase === 'A' && to >= f.nA) return ACT.fsfinA(); if (f.phase === 'B' && to < f.nA) return; }
+  _examMoveF(d);
+};
+const _playF = play;
+play = function () {
+  let html = _playF();
+  if (!sess || !sess.fs) return html;
+  const f = sess.fs, v = diagVariant(sess.cfg.diag), lo = f.phase === 'A' ? 0 : f.nA, hi = f.phase === 'A' ? f.nA - 1 : sess.qs.length - 1;
+  html = html.replace(/<button data-act="ejump" data-arg="(\d+)"[^>]*>\d+<\/button>/g, (m, i) => (+i < lo || +i > hi) ? '' : m);
+  html = html.replace(`${TIERS[sess.cfg.tier].name} ${v.name}`, `Functional Skills ${v.name}`).replace(/<span class="count">(No calculator|Calculator)<\/span>/, `<span class="count">${f.phase === 'A' ? 'No calculator' : 'Calculator'}</span>`);
+  const banner = `<div class="callout">${ic(f.phase === 'A' ? 'file' : 'chart', 18)}<div><b>Section ${f.phase} — ${f.phase === 'A' ? 'no calculator' : 'calculator allowed'}</b> · questions ${lo + 1}–${hi + 1}${f.phase === 'A' ? '. You cannot come back to Section A once you move on.' : ''}</div></div>`;
+  html = html.replace('<div class="hud">', banner + '<div class="hud">');
+  if (f.phase === 'A') {
+    html = html.replace(/data-act="esubmit">Hand in paper \([^)]*\)/, `data-act="fsfinA">Finish Section A (${sess.ans.slice(0, f.nA).filter(a => a != null).length} of ${f.nA} answered)`);
+    if (sess.i === f.nA - 1) html = html.replace('>Save and next</button>', '>Finish Section A</button>');
+  } else if (sess.i === f.nA) html = html.replace('data-act="eprev" ', 'data-act="eprev" disabled ');
+  return html;
+};
+
+/* ---------- hand in: Functional Skills result ---------- */
+function fsResult(score, L) { return score >= L.pass ? 'Pass standard' : score >= L.pass - 5 ? 'Close to pass' : 'Not yet'; }
+function fsNext(rep) {
+  const L = FSL[rep.level], up = { E3: 'L1', L1: 'L2' }[rep.level], down = { L1: 'E3', L2: 'L1' }[rep.level];
+  if (rep.score >= L.pass && rep.pct >= 75 && up) return `Comfortably at the ${L.name} pass standard. Try a ${FSL[up].name} diagnostic next.`;
+  if (rep.score >= L.pass) return `Working at ${L.name} pass standard. Practise the target skills, then book the exam.`;
+  if (rep.score >= L.pass - 5) return `Close to the ${L.name} pass mark. Work on the targets below, then try another ${L.short} set.`;
+  if (rep.pct < 35 && down) return `${L.name} is a stretch right now. Try a ${FSL[down].name} diagnostic to find the right starting point.`;
+  return `Not yet at the ${L.name} pass standard. Work on the targets below and try another ${L.short} set.`;
+}
+const _submitF = submitExam;
+submitExam = function () {
+  if (!sess || !sess.fs) return _submitF();
+  if (sess.done) return;
+  const f = sess.fs, v = diagVariant(sess.cfg.diag);
+  if (view === 'play') saveExamInput();
+  if (f.xstash && !sess.extra) { const x = f.xstash; for (let i = f.nA; i < sess.ans.length; i++) { x.snap[i] = cloneA(sess.ans[i]); x.last[i] = cloneA(sess.ans[i]); } sess.extra = x; f.xstash = null; }
+  _submitF();
+  const rep = S.diags[S.diags.length - 1], L = FSL[v.level];
+  rep.fs = true; rep.level = v.level; rep.board = FS_BOARD; rep.pass = L.pass;
+  const strands = {}; Object.keys(FS_STRANDS).forEach(k => strands[k] = { got: 0, tot: 0 });
+  let a = 0, at = 0, b = 0, bt = 0;
+  v.items.forEach((it, i) => { const g = rep.items[i].got, st = fsStrand(it.t); strands[st].got += g; strands[st].tot += it.m; if (it.sec === 'A') { a += g; at += it.m; } else { b += g; bt += it.m; } });
+  rep.strands = strands; rep.secA = [a, at]; rep.secB = [b, bt];
+  rep.result = fsResult(rep.score, L); rep.grade = rep.score >= L.pass ? 1 : 0;
+  rep.secs = L.aMin * 60 + L.bMin * 60;
+  if (rep.extra) { rep.extra.used = f.usedX; rep.extra.stdResult = fsResult(rep.extra.stdScore, L); rep.extra.stdGrade = rep.extra.stdScore >= L.pass ? 1 : 0; }
+  save(); render();
+};
+
+/* ---------- report ---------- */
+const _diagResF = diagRes;
+diagRes = function () {
+  const rep = (S.diags || [])[vp.i]; if (!rep || !rep.fs) return _diagResF();
+  const v = diagVariant(rep.vid), L = FSL[rep.level];
+  const topics = Object.entries(rep.topics).map(([id, x]) => ({ id, ...x }));
+  const priority = topics.filter(x => x.got < x.tot).sort((p, q) => (q.tot - q.got) - (p.tot - p.got)).slice(0, 6);
+  const strong = topics.filter(x => x.got === x.tot && x.tot > 0).sort((p, q) => q.tot - p.tot).slice(0, 6);
+  const col = p => p >= 70 ? 'var(--ok)' : p >= 40 ? 'var(--amber)' : 'var(--bad)';
+  const bars = Object.entries(rep.strands).filter(([, x]) => x.tot).map(([k, x]) => { const p = Math.round(x.got / x.tot * 100); return `<div class="rowline" style="display:block"><div class="row between"><b>${k}</b><span class="small">${x.got}/${x.tot} · ${p}%</span></div><span class="bar thin"><i style="width:${p}%;background:${col(p)}"></i></span></div>`; }).join('');
+  const passPct = Math.round(L.pass / L.total * 100), meter = `<div style="position:relative;margin:16px 0 6px"><div style="height:16px;border:2px solid var(--line);border-radius:9px;overflow:hidden;background:var(--surface)"><i style="display:block;height:100%;width:${rep.pct}%;background:${col(rep.score >= L.pass ? 80 : rep.score >= L.pass - 5 ? 50 : 20)}"></i></div><span style="position:absolute;left:${passPct}%;top:-6px;bottom:-6px;border-left:3px dashed currentColor"></span><div class="small mut" style="margin-left:${Math.max(0, passPct - 12)}%">Pass mark ≈ ${L.pass}</div></div>`;
+  const review = v.items.map((it, i) => { const q = diagQ(it), r = rep.items[i]; return `<details class="acc2"><summary><b>${i + 1}.</b> ${r.got === it.m ? ic('check', 16) : ic('x', 16)} ${TOPIC(it.t).name} · ${r.got}/${it.m} <span class="small mut">(Section ${it.sec}, ${it.src})</span></summary><div style="margin-top:8px">${q.text}</div>${q.svg || ''}<p class="small">Answer given: <b>${r.a == null || r.a === '' ? 'none' : esc(r.a)}</b> · Correct: <b>${answerHTML(q)}</b></p><p class="small mut">${it.w || ''}</p></details>`; }).join('');
+  return `${header()}<main class="wrapx">${backBtn('nav', 'progress', 'Progress')}
+  <h1 class="pageh">Diagnostic report</h1><p class="mut">${rep.name ? `<b>${esc(rep.name)}</b> · ` : ''}Functional Skills Maths ${L.name}, ${v.name.split('·')[1].trim()} (mirrors ${v.model}) · ${rep.date}${rep.extra ? ` · with ${rep.extra.mins} min extra time` : ''}</p>
+  <article class="card"><div class="grid3 statrow"><div><div class="big">${rep.score}/${rep.total}</div><div class="small mut">${rep.pct}% of marks</div></div><div><div class="big" style="font-size:1.5rem">${rep.result}</div><div class="small mut">${L.name}</div></div><div><div class="small"><b>Section A</b> ${rep.secA[0]}/${rep.secA[1]}<br><span class="mut">no calculator</span></div><div class="small" style="margin-top:6px"><b>Section B</b> ${rep.secB[0]}/${rep.secB[1]}<br><span class="mut">calculator</span></div></div></div>
+   ${meter}
+   <div class="callout">${ic('bulb', 18)}<div>${fsNext(rep)}</div></div>
+   <p class="small mut">The pass mark is set for each real paper; ${L.pass} out of ${L.total} is typical for Pearson ${L.name}. Only final answers are marked here (no method marks), so a real exam score may be a little higher.</p></article>
+  <article class="card"><h2>Your teacher</h2>${sendCard(rep, vp.i)}${rep.extra ? '' : extraCard(rep)}</article>${rep.extra ? extraCard(rep) : ''}
+  <article class="card"><h2>By area of the course</h2>${bars}</article>
+  <div class="grid2"><article class="card"><h2>Targets — practise these</h2>${priority.length ? priority.map(x => `<div class="rowline"><span><b>${TOPIC(x.id).name}</b> <span class="small mut">${x.got}/${x.tot} marks</span></span>${lnk('lesson', x.id, 'Lesson')}</div>`).join('') : '<p>Full marks — no gaps found.</p>'}</article>
+   <article class="card"><h2>Strengths</h2>${strong.length ? strong.map(x => `<div class="rowline"><span><b>${TOPIC(x.id).name}</b> <span class="small mut">${x.tot}/${x.tot}</span></span></div>`).join('') : '<p class="small mut">Nothing fully secure yet — that\'s what the targets are for.</p>'}</article></div>
+  <div class="grid2"><button class="btn" data-act="dcopy" data-arg="${vp.i}">${ic('file', 18)} Copy report for teacher</button>${lnk('mode', 'diag', 'Take another test')}</div>
+  <article class="card"><h2>Question by question</h2>${review}</article></main>`;
+};
+const _diagTextF = diagText;
+diagText = function (rep) {
+  if (!rep.fs) return _diagTextF(rep);
+  const v = diagVariant(rep.vid), L = FSL[rep.level];
+  let t = `MathsQuest diagnostic — Functional Skills Maths ${L.name} (Pearson Edexcel)\nName: ${rep.name || '-'}${rep.group ? `\nGroup: ${rep.group}` : ''}\nDate: ${rep.date}\nPaper: ${v.name} (mirrors ${v.model})\nScore: ${rep.score}/${rep.total} (${rep.pct}%) — ${rep.result} (typical pass mark ${L.pass})\nSection A (no calculator): ${rep.secA[0]}/${rep.secA[1]} · Section B (calculator): ${rep.secB[0]}/${rep.secB[1]}\nNext step: ${fsNext(rep)}\n\nBy area:\n` + Object.entries(rep.strands).filter(([, x]) => x.tot).map(([k, x]) => `  ${k}: ${x.got}/${x.tot}`).join('\n');
+  const pr = Object.entries(rep.topics).filter(([, x]) => x.got < x.tot).sort((a, b) => (b[1].tot - b[1].got) - (a[1].tot - a[1].got)).slice(0, 6).map(([id]) => TOPIC(id).name);
+  t += `\n\nTargets: ${pr.join(', ') || 'none'}`;
+  if (rep.extra) { const ex = rep.extra; t += `\n\nExtra time: ${ex.mins} min allowed, ${fmtTime(ex.used)} used. Score at end of normal time: ${ex.stdScore}/${rep.total} (${ex.stdResult}).\nChanges during extra time:` + (ex.log.length ? ex.log.map(l => `\n  +${clock(l.at)} Q${l.q} (${l.src}) ${l.kind}: ${l.before} → ${l.after}`).join('') : ' none'); }
+  else t += '\n\nExtra time: not used.';
+  return t;
+};
+const _payloadF = diagPayload;
+diagPayload = function (rep) {
+  const p = _payloadF(rep); if (!rep.fs) return p;
+  const L = FSL[rep.level];
+  return Object.assign(p, { board: 'Functional Skills (Pearson Edexcel)', tier: L.name, grade: rep.result, target: fsNext(rep), gradeBeforeExtra: rep.extra ? rep.extra.stdResult : rep.result, passMark: L.pass, sectionA: rep.secA.join('/'), sectionB: rep.secB.join('/'), minutesAllowed: L.aMin + L.bMin,
+    strands: Object.fromEntries(Object.entries(rep.strands).filter(([, x]) => x.tot).map(([k, x]) => [k, Math.round(x.got / x.tot * 100)])),
+    targets: Object.entries(rep.topics).filter(([, x]) => x.got < x.tot).sort((a, b) => (b[1].tot - b[1].got) - (a[1].tot - a[1].got)).slice(0, 6).map(([id]) => TOPIC(id).name).join(', ') });
+};
+
+const _extraCardF = extraCard;
+extraCard = function (rep) {
+  let h = _extraCardF(rep);
+  if (rep.fs && rep.extra) h = h.replace(/End of normal time · grade \w+/, 'End of normal time · ' + rep.extra.stdResult).replace(/After extra time · grade \w+/, 'After extra time · ' + rep.result);
+  return h;
 };
 </script>
 <script>/* =========================================================
