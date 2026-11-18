@@ -112,7 +112,7 @@ details.acc2{border-top:1px solid #E5E0D8;padding:10px 0}details.acc2 summary{cu
 .dots5{display:inline-flex;gap:3px;margin-left:2px}.dots5 i{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--line);background:transparent}.dots5 i.on{background:var(--brand)}
 .qtext{font-size:1.28rem;font-weight:500;color:var(--ink);margin:16px 0}.qtext small{display:block;color:var(--mut);font-size:.9rem;margin-top:6px}.qtext .big{font-size:1.45rem;margin:8px 0}
 .qsvg{width:100%;max-width:360px;display:block;margin:4px auto 14px;color:var(--ink)}
-.sl{fill:currentColor;font:700 15px var(--font)}.sl.sm{font-size:12px}.sl.acc{fill:var(--brand)}
+.sl{fill:currentColor;font:700 15px var(--font)}.sl.sm{font-size:13.5px}.sl.acc{fill:var(--brand)}
 :root{--svgfill:#EDE8FF;--acc:#3A10E5}body.dark{--svgfill:#2E2760;--acc:#B9A8FF}
 .fr{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 3px;font-size:.95em}
 .fr>span:first-child{border-bottom:2px solid currentColor;padding:0 3px}.fr>span:last-child{padding:0 3px}
@@ -209,6 +209,14 @@ main.wrapx{padding-top:18px}main.playw{padding-top:14px}
 .tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
 .logt{width:100%;border-collapse:collapse;font-size:.9rem}.logt th,.logt td{border-bottom:1px solid rgba(0,0,0,.15);padding:6px 8px;text-align:left;vertical-align:top}.logt th{font-weight:700;background:rgba(58,16,229,.06)}
 body.dark .callout.ok{background:#173b22}body.dark .callout.extra{background:#3b3216}
+.qtbl{display:flex;flex-direction:column;align-items:center;margin:6px auto 14px;max-width:100%;overflow-x:auto}
+.qtbl table{border-collapse:collapse;font-size:1rem;background:var(--surface)}
+.qtbl th,.qtbl td{border:2px solid var(--line);padding:7px 12px;text-align:center;min-width:44px}
+.qtbl th{background:var(--brand-50);font-weight:700}body.dark .qtbl th{background:#2E2760}
+.qtbl-t{font-weight:700;margin-bottom:6px}
+.figrow{display:flex;gap:8px;justify-content:center;align-items:flex-end;flex-wrap:wrap}.figrow .qsvg{max-width:46%;margin:4px 0}
+.qsvg.fig{max-width:380px}
+.qtbl td,.qtbl th{white-space:nowrap}
 </style>
 </head>
 <body>
@@ -2022,6 +2030,7 @@ function diagQ(it) {
   else if (it.k === 'ratio') { q.kind = 'ratio'; q.text += ' <span class="small mut">(type it like 3:2)</span>'; q.answer = Array.isArray(it.a) ? it.a : String(it.a).split(':').map(Number); }
   else { q.kind = 'num'; q.answer = it.a; if (it.dp != null) { q.dp = it.dp; q.exact = it.exact != null ? it.exact : it.a; } if (it.rel) q.tol = Math.abs(it.a) * 0.01; if (it.rel3) q.tol = Math.abs(it.a) * 0.005; if (it.pre) q.pre = it.pre; if (it.unit) q.unit = it.unit; }
   if (it.pre && q.kind !== 'num') q.pre = it.pre;
+  if (it.fig) q.svg = it.fig;
   return q;
 }
 /* Score one item: whole marks if fully right; multi-part answers earn marks per correct part */
@@ -2745,6 +2754,508 @@ EQ('H', { id: 'H-EQ-J19-2', model: 'Eduqas June 2019 · Component 2H', calc: tru
   v.board = m[1]; v.series = m[2] + ' ' + m[3]; v.year = +m[3]; v.sort = +m[3] * 100 + (m[2] === 'November' ? 11 : 6);
   v.plabel = m[4]; v.pnum = m[5]; v.name = `${m[1]} ${m[2].slice(0, 3)} ${m[3]} · ${m[4]} ${m[5]}`;
 }));
+
+/* =========================================================
+   FIGURE LIBRARY for diagnostic questions
+   Every drawing uses currentColor / CSS variables so it works
+   in light mode, dark mode and colour-blind mode.
+   ========================================================= */
+const FG = (() => {
+  const r1 = n => Math.round(n * 10) / 10;
+  const sv = (w, h, body, label) => `<svg class="qsvg fig" viewBox="0 0 ${r1(w)} ${r1(h)}" role="img" aria-label="${label.replace(/"/g, '')}">${body}</svg>`;
+  const T = (x, y, s, o = {}) => `<text x="${r1(x)}" y="${r1(y)}" text-anchor="${o.a || 'middle'}" class="sl${o.sm ? ' sm' : ''}${o.acc ? ' acc' : ''}"${o.rot ? ` transform="rotate(${o.rot} ${r1(x)} ${r1(y)})"` : ''}>${s}</text>`;
+  const Ln = (x1, y1, x2, y2, o = {}) => `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="currentColor" stroke-width="${o.w || 2.5}"${o.dash ? ' stroke-dasharray="6 5"' : ''}${o.arrow ? ' marker-end="url(#fgArr)"' : ''}/>`;
+  const PL = (pts, o = {}) => `<polygon points="${pts.map(p => r1(p[0]) + ',' + r1(p[1])).join(' ')}" fill="${o.fill || 'var(--svgfill)'}" stroke="currentColor" stroke-width="${o.w || 2.5}"${o.dash ? ' stroke-dasharray="6 5"' : ''}/>`;
+  const PATH = (d, o = {}) => `<path d="${d}" fill="${o.fill || 'none'}" stroke="currentColor" stroke-width="${o.w || 2.5}"${o.dash ? ' stroke-dasharray="6 5"' : ''}/>`;
+  const ARR = `<defs><marker id="fgArr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
+  const rad = d => d * Math.PI / 180;
+  const NOTE = s => s ? `<p class="small mut center" style="margin:-6px 0 12px">${s}</p>` : '';
+  const nd = '<p class="small mut center" style="margin:-8px 0 12px">Not drawn accurately</p>';
+
+  /* ---------- number machine ---------- */
+  function machine(ops, inp = '', out = '') {
+    const bw = 74, gap = 22, n = ops.length + 2, w = n * bw + (n - 1) * gap + 8;
+    let s = ARR, x = 4;
+    const cells = [{ t: inp, lab: 'INPUT' }, ...ops.map(o => ({ t: o, op: 1 })), { t: out, lab: 'OUTPUT' }];
+    cells.forEach((c, i) => {
+      if (c.lab) s += `<text x="${x + bw / 2}" y="18" text-anchor="middle" class="sl" style="font-size:15px">${c.lab}</text>`;
+      s += `<rect x="${x}" y="26" width="${bw}" height="56" rx="${c.op ? 6 : 12}" fill="${c.op ? 'var(--svgfill)' : 'none'}" stroke="currentColor" stroke-width="3"/>`;
+      s += `<text x="${x + bw / 2}" y="62" text-anchor="middle" class="sl${c.op ? '' : ' acc'}" style="font-size:${String(c.t).length > 5 ? 19 : 23}px">${c.t}</text>`;
+      if (i < cells.length - 1) s += Ln(x + bw + 2, 54, x + bw + gap - 2, 54, { w: 3, arrow: 1 });
+      x += bw + gap;
+    });
+    return sv(w, 90, s, 'Number machine: input ' + (inp || 'blank') + ', ' + ops.join(', then ') + ', output ' + (out || 'blank'));
+  }
+
+  /* ---------- general polygon with labels ----------
+     pts: [[x,y],...] in any units (auto-scaled)
+     o.v: vertex letters, o.s: {i: side label for side i→i+1}, o.a: {i: angle label}, o.r: [right-angle vertices],
+     o.ext: {i: label} exterior angle (extends side i-1→i beyond i), o.tick: [side indexes with equal marks], o.extra: svg  */
+  function poly(pts, o = {}) {
+    const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+    const mnx = Math.min(...xs), mxx = Math.max(...xs), mny = Math.min(...ys), mxy = Math.max(...ys);
+    const sc = (o.size || 240) / Math.max(mxx - mnx, (mxy - mny) * 1.25, 1), pad = 56, padL = o.ext ? 110 : 56;
+    const P = pts.map(p => [padL + (p[0] - mnx) * sc, pad + (p[1] - mny) * sc]);
+    const W = (mxx - mnx) * sc + pad + padL + (o.ext ? 30 : 0), H = (mxy - mny) * sc + 2 * pad;
+    const cx = P.reduce((a, p) => a + p[0], 0) / P.length, cy = P.reduce((a, p) => a + p[1], 0) / P.length;
+    let s = PL(P, { fill: o.fill });
+    const n = P.length;
+    (o.v || []).forEach((l, i) => { if (!l) return; const [x, y] = P[i], dx = x - cx, dy = y - cy, d = Math.hypot(dx, dy) || 1; s += T(x + dx / d * 18, y + dy / d * 18 + 5, l); });
+    Object.entries(o.s || {}).forEach(([i, l]) => { i = +i; const a = P[i], b = P[(i + 1) % n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; let nx = -(b[1] - a[1]), ny = b[0] - a[0]; const d = Math.hypot(nx, ny) || 1; nx /= d; ny /= d; if ((mx + nx - cx) ** 2 + (my + ny - cy) ** 2 < (mx - cx) ** 2 + (my - cy) ** 2) { nx = -nx; ny = -ny; } s += T(mx + nx * 14, my + ny * 14 + 5 + (ny > 0.5 ? 6 : 0), l, { acc: 1, a: nx > 0.45 ? 'start' : nx < -0.45 ? 'end' : 'middle' }); });
+    Object.entries(o.a || {}).forEach(([i, l]) => { i = +i; const [x, y] = P[i], a = P[(i + n - 1) % n], b = P[(i + 1) % n]; const ua = [a[0] - x, a[1] - y], ub = [b[0] - x, b[1] - y]; const la = Math.hypot(...ua), lb = Math.hypot(...ub); const bx = ua[0] / la + ub[0] / lb, by = ua[1] / la + ub[1] / lb, bd = Math.hypot(bx, by) || 1; const ang = Math.acos(Math.max(-1, Math.min(1, (ua[0] * ub[0] + ua[1] * ub[1]) / la / lb))); const rr = ang < 0.6 ? 46 : ang < 1.1 ? 36 : 30; const r0 = 18; s += PATH(`M${r1(x + ua[0] / la * r0)},${r1(y + ua[1] / la * r0)} A${r0},${r0} 0 0,${(ua[0] * ub[1] - ua[1] * ub[0]) > 0 ? 1 : 0} ${r1(x + ub[0] / lb * r0)},${r1(y + ub[1] / lb * r0)}`, { w: 1.6 }); s += T(x + bx / bd * (rr + 4), y + by / bd * (rr + 4) + 5, l, { sm: String(l).length > 7 }); });
+    (o.r || []).forEach(i => { const [x, y] = P[i], a = P[(i + n - 1) % n], b = P[(i + 1) % n]; const ua = [(a[0] - x), (a[1] - y)], ub = [(b[0] - x), (b[1] - y)]; const la = Math.hypot(...ua), lb = Math.hypot(...ub), k = 14; const p1 = [x + ua[0] / la * k, y + ua[1] / la * k], p3 = [x + ub[0] / lb * k, y + ub[1] / lb * k], p2 = [p1[0] + ub[0] / lb * k, p1[1] + ub[1] / lb * k]; s += `<polyline points="${r1(p1[0])},${r1(p1[1])} ${r1(p2[0])},${r1(p2[1])} ${r1(p3[0])},${r1(p3[1])}" fill="none" stroke="currentColor" stroke-width="1.6"/>`; });
+    (o.tick || []).forEach(i => { const a = P[i], b = P[(i + 1) % n], mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2; let nx = -(b[1] - a[1]), ny = b[0] - a[0]; const d = Math.hypot(nx, ny); nx /= d; ny /= d; s += Ln(mx - nx * 7, my - ny * 7, mx + nx * 7, my + ny * 7, { w: 2 }); });
+    Object.entries(o.ext || {}).forEach(([i, l]) => { i = +i; const p = P[i], q = P[(i + n - 1) % n]; const ux = p[0] - q[0], uy = p[1] - q[1], d = Math.hypot(ux, uy); const e = [p[0] + ux / d * 60, p[1] + uy / d * 60]; s += Ln(p[0], p[1], e[0], e[1], { dash: 1, w: 2 }); const b = P[(i + 1) % n]; const vx = (ux / d + (b[0] - p[0]) / Math.hypot(b[0] - p[0], b[1] - p[1])), vy = (uy / d + (b[1] - p[1]) / Math.hypot(b[0] - p[0], b[1] - p[1])), vd = Math.hypot(vx, vy) || 1; s += T(p[0] + vx / vd * 30, p[1] + vy / vd * 30 + 5, l, { acc: 1 }); });
+    if (o.extra) s += o.extra(P);
+    return sv(W, H, s, o.label || 'Diagram') + (o.nd === false ? '' : nd);
+  }
+  const rightTri = (o) => poly([[0, 0], [0, o.h || 3], [o.w || 4, o.h || 3]], { v: o.v, s: { 0: o.left || '', 1: o.bottom || '', 2: o.hyp || '' }, a: o.a || {}, r: [1], label: 'Right-angled triangle', size: o.size || 220 });
+
+  /* ---------- straight line with rays ---------- */
+  function rays(angles, labels, o = {}) { // angles: list of ray directions in degrees (0 = right), labels between consecutive rays starting from 180°
+    const cx = 160, cy = 150, R = 120;
+    let s = Ln(cx - R - 10, cy, cx + R + 10, cy, { w: 3 });
+    if (o.letters) { s += T(cx - R - 18, cy + 5, o.letters[0]); s += T(cx + R + 18, cy + 5, o.letters[2]); s += T(cx, cy + 22, o.letters[1]); }
+    angles.forEach((a, i) => { const x = cx + Math.cos(rad(a)) * R, y = cy - Math.sin(rad(a)) * R; s += Ln(cx, cy, x, y, { w: 3 }); if (o.rl && o.rl[i]) s += T(cx + Math.cos(rad(a)) * (R + 16), cy - Math.sin(rad(a)) * (R + 16) + 5, o.rl[i]); });
+    const bounds = [180, ...angles.slice().sort((a, b) => b - a), 0];
+    labels.forEach((l, i) => { const a1 = bounds[i], a2 = bounds[i + 1], m = (a1 + a2) / 2, rr = (a1 - a2) < 35 ? 82 : 52; const r0 = 24; s += PATH(`M${r1(cx + Math.cos(rad(a1)) * r0)},${r1(cy - Math.sin(rad(a1)) * r0)} A${r0},${r0} 0 0,1 ${r1(cx + Math.cos(rad(a2)) * r0)},${r1(cy - Math.sin(rad(a2)) * r0)}`, { w: 1.6 }); s += T(cx + Math.cos(rad(m)) * rr, cy - Math.sin(rad(m)) * rr + 5, l, { acc: 1, sm: String(l).length > 5 }); });
+    return sv(320, 180, s, 'Angles on a straight line') + nd;
+  }
+
+  /* ---------- parallel lines + transversal ---------- */
+  function parallels(known, x, kind = 'co') {
+    const y1 = 50, y2 = 150, ax = 130, bx = 200; // transversal from (ax,y1) to (bx,y2)
+    let s = Ln(20, y1, 300, y1, { w: 3 }) + Ln(20, y2, 300, y2, { w: 3 });
+    s += `<path d="M150,${y1 - 6} l10,6 l-10,6 M150,${y2 - 6} l10,6 l-10,6" fill="none" stroke="currentColor" stroke-width="2.5"/>`;
+    s += Ln(ax - 30, y1 - 42, bx + 30, y2 + 42, { w: 3 });
+    s += T(28, y1 - 8, 'A', { a: 'start' }) + T(296, y1 - 8, 'B', { a: 'end' }) + T(28, y2 - 8, 'C', { a: 'start' }) + T(296, y2 - 8, 'D', { a: 'end' });
+    s += T(ax + 40, y1 + 24, known, { acc: 1 });       // below top line, right of transversal
+    if (kind === 'co') s += T(bx + 32, y2 - 12, x, { acc: 1 });      // above bottom line, right side
+    else if (kind === 'alt') s += T(bx - 36, y2 - 12, x, { acc: 1 });
+    else s += T(bx + 36, y2 + 26, x, { acc: 1 });
+    return sv(320, 200, s, 'Parallel lines crossed by a straight line') + nd;
+  }
+
+  /* ---------- regular polygon ---------- */
+  function regPoly(n, mark = 'int', lab = '') {
+    const R = 95, cx = 150, cy = 120, P = [];
+    for (let i = 0; i < n; i++) { const a = -Math.PI / 2 + Math.PI / n + i * 2 * Math.PI / n; P.push([cx + R * Math.cos(a), cy + R * Math.sin(a)]); }
+    let s = PL(P);
+    const i = Math.floor(n / 2), p = P[i], a = P[i - 1], b = P[(i + 1) % n];
+    const ua = [a[0] - p[0], a[1] - p[1]], ub = [b[0] - p[0], b[1] - p[1]], la = Math.hypot(...ua), lb = Math.hypot(...ub);
+    if (mark === 'ext') { const e = [p[0] - ua[0] / la * 70, p[1] - ua[1] / la * 70]; s += Ln(p[0], p[1], e[0], e[1], { dash: 1, w: 2 }); const vx = -ua[0] / la + ub[0] / lb, vy = -ua[1] / la + ub[1] / lb, vd = Math.hypot(vx, vy); s += T(p[0] + vx / vd * 30, p[1] + vy / vd * 30 + 5, lab || 'x', { acc: 1 }); }
+    else { const vx = ua[0] / la + ub[0] / lb, vy = ua[1] / la + ub[1] / lb, vd = Math.hypot(vx, vy); const sgn = mark === 'reflex' ? -1 : 1; s += T(p[0] + sgn * vx / vd * 30, p[1] + sgn * vy / vd * 30 + 5, lab || 'x', { acc: 1 }); }
+    return sv(300, 240, s, `Regular ${n}-sided polygon`);
+  }
+
+  /* ---------- solids ---------- */
+  function cuboid(l, w, h, o = {}) {
+    const x = 80, y = 70, L = 170, H = o.flat ? 50 : 100, dx = 60, dy = -40;
+    let s = PL([[x, y], [x + L, y], [x + L, y + H], [x, y + H]]) + PL([[x, y], [x + dx, y + dy], [x + L + dx, y + dy], [x + L, y]], { fill: 'var(--svgfill)' }) + PL([[x + L, y], [x + L + dx, y + dy], [x + L + dx, y + H + dy], [x + L, y + H]], { fill: 'var(--svgfill)' });
+    s += Ln(x, y + H, x + dx, y + H + dy, { dash: 1, w: 1.6 }) + Ln(x + dx, y + H + dy, x + dx, y + dy, { dash: 1, w: 1.6 }) + Ln(x + dx, y + H + dy, x + L + dx, y + H + dy, { dash: 1, w: 1.6 });
+    if (l) s += T(x + L / 2, y + H + 24, l, { acc: 1 });
+    if (w) s += T(x + L + dx / 2 + 22, y + H + dy / 2 + 14, w, { acc: 1, a: 'start' });
+    if (h) s += T(x - 10, y + H / 2 + 5, h, { acc: 1, a: 'end' });
+    return sv(360, 210, s, 'Cuboid') + nd;
+  }
+  function triPrism(o) { // right-angled cross-section at front
+    const A = [50, 40], B = [50, 160], C = [170, 160], d = [110, -50];
+    let s = PL([A, [A[0] + d[0], A[1] + d[1]], [C[0] + d[0], C[1] + d[1]], C])  + PL([A, B, C]);
+    s += Ln(B[0], B[1], B[0] + d[0], B[1] + d[1], { dash: 1, w: 1.6 }) + Ln(B[0] + d[0], B[1] + d[1], A[0] + d[0], A[1] + d[1], { dash: 1, w: 1.6 }) + Ln(B[0] + d[0], B[1] + d[1], C[0] + d[0], C[1] + d[1], { dash: 1, w: 1.6 });
+    s += `<polyline points="50,146 64,146 64,160" fill="none" stroke="currentColor" stroke-width="1.6"/>`;
+    if (o.left) s += T(40, 105, o.left, { a: 'end', acc: 1 });
+    if (o.bottom) s += T(110, 182, o.bottom, { acc: 1 });
+    if (o.hyp) s += T(100, 92, o.hyp, { acc: 1, a: 'end' });
+    if (o.len) s += T(C[0] + d[0] / 2 + 12, C[1] + d[1] / 2 + 18, o.len, { acc: 1, a: 'start' });
+    if (o.v) s += T(70, 222, o.v, { a: 'start', sm: 1 });
+    return sv(330, o.v ? 230 : 200, s, 'Triangular prism') + nd;
+  }
+  function paraPrism(o) {
+    const P = [[40, 160], [150, 160], [190, 80], [80, 80]], d = [100, -45];
+    let s = PL([P[3], [P[3][0] + d[0], P[3][1] + d[1]], [P[2][0] + d[0], P[2][1] + d[1]], P[2]]) + PL([P[1], P[2], [P[2][0] + d[0], P[2][1] + d[1]], [P[1][0] + d[0], P[1][1] + d[1]]]) + PL(P);
+    s += Ln(80, 80, 80, 160, { dash: 1, w: 1.6 }) + `<polyline points="80,146 94,146 94,160" fill="none" stroke="currentColor" stroke-width="1.4"/>`;
+    s += T(95, 182, o.base, { acc: 1 }) + T(74, 125, o.h, { acc: 1, a: 'end' }) + T(255, 150, o.len, { acc: 1, a: 'start' });
+    return sv(340, 200, s, 'Prism with parallelogram cross-section') + nd;
+  }
+  function cylinder(r, h, o = {}) {
+    const cx = 150, rx = 70, ry = 20, top = 52, bot = 182;
+    let s = `<path d="M${cx - rx},${top} L${cx - rx},${bot} A${rx},${ry} 0 0,0 ${cx + rx},${bot} L${cx + rx},${top}" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += `<ellipse cx="${cx}" cy="${top}" rx="${rx}" ry="${ry}" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += PATH(`M${cx - rx},${bot} A${rx},${ry} 0 0,1 ${cx + rx},${bot}`, { dash: 1, w: 1.6 });
+    if (o.wedge) s += `<path d="M${cx},${top} L${cx + rx * 0.9},${top + ry * 0.45} A${rx},${ry} 0 0,1 ${cx + rx * 0.25},${top + ry * 0.97} Z" fill="var(--surface)" stroke="currentColor" stroke-width="2"/>`;
+    s += Ln(cx, top, cx + rx, top, { w: 2 }) + `<circle cx="${cx}" cy="${top}" r="3" fill="currentColor"/>`;
+    if (r) s += T(cx + rx / 2, top - ry - 6, r, { acc: 1 });
+    if (h) s += T(cx + rx + 12, (top + bot) / 2 + 5, h, { acc: 1, a: 'start' });
+    return sv(300, 215, s, 'Cylinder') + nd;
+  }
+  function cone(r, h, l, o = {}) {
+    const cx = 150, rx = 70, ry = 18, bot = 175, ap = 30;
+    let s = `<path d="M${cx},${ap} L${cx - rx},${bot} A${rx},${ry} 0 0,0 ${cx + rx},${bot} Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += PATH(`M${cx - rx},${bot} A${rx},${ry} 0 0,1 ${cx + rx},${bot}`, { dash: 1, w: 1.6 });
+    s += Ln(cx, ap, cx, bot, { dash: 1, w: 1.8 }) + Ln(cx, bot, cx + rx, bot, { w: 2 });
+    s += `<polyline points="${cx},${bot - 12} ${cx + 12},${bot - 12} ${cx + 12},${bot}" fill="none" stroke="currentColor" stroke-width="1.4"/>`;
+    if (r) s += T(cx + rx / 2, bot + 26, r, { acc: 1 });
+    if (h) s += T(cx + 8, (ap + bot) / 2 + 24, h, { acc: 1, a: 'start' });
+    if (l) s += T(cx + rx / 2 + 22, (ap + bot) / 2 - 10, l, { acc: 1, a: 'start' });
+    return sv(300, 210, s, 'Cone') + nd;
+  }
+  function sphere(lab, o = {}) {
+    let s = `<circle cx="150" cy="100" r="80" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + PATH('M70,100 A80,22 0 0,0 230,100', { w: 1.6 }) + PATH('M70,100 A80,22 0 0,1 230,100', { w: 1.6, dash: 1 });
+    s += `<circle cx="150" cy="100" r="3" fill="currentColor"/>`;
+    s += o.diam ? Ln(70, 100, 230, 100, { w: 2 }) + T(150, 92, lab, { acc: 1 }) : Ln(150, 100, 230, 100, { w: 2 }) + T(190, 92, lab, { acc: 1 });
+    return sv(300, 195, s, 'Sphere') + nd;
+  }
+  function hemisphere(lab) {
+    let s = `<path d="M60,130 A90,90 0 0,1 240,130 A90,24 0 0,1 60,130 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += PATH('M60,130 A90,24 0 0,1 240,130', { w: 1.6 }) + `<circle cx="150" cy="130" r="3" fill="currentColor"/>` + Ln(150, 130, 240, 130, { w: 2 }) + T(195, 123, lab, { acc: 1 });
+    return sv(300, 170, s, 'Hemisphere') + nd;
+  }
+  function cornet(o) { // hemisphere on top of an upside-down cone
+    let s = `<path d="M80,90 A70,70 0 0,1 220,90 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += `<path d="M80,90 L150,280 L220,90" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + PATH('M80,90 A70,16 0 0,0 220,90', { w: 1.6 }) + PATH('M80,90 A70,16 0 0,1 220,90', { w: 1.6, dash: 1 });
+    s += Ln(150, 90, 220, 90, { w: 2 }) + T(185, 83, o.r, { acc: 1 }) + Ln(150, 90, 150, 280, { w: 1.6, dash: 1 }) + T(158, 190, o.h, { acc: 1, a: 'start' });
+    return sv(300, 295, s, 'Cone with a hemisphere on top') + nd;
+  }
+  function pyramid(base, h, o = {}) {
+    const A = [50, 190], B = [210, 190], C = [270, 140], D = [110, 140], apex = [160, 20];
+    let s = PL([A, B, C, apex], { fill: 'var(--svgfill)' }) + PL([A, B, apex]) + PL([B, C, apex]);
+    s += Ln(A[0], A[1], D[0], D[1], { dash: 1, w: 1.6 }) + Ln(D[0], D[1], C[0], C[1], { dash: 1, w: 1.6 }) + Ln(D[0], D[1], apex[0], apex[1], { dash: 1, w: 1.6 });
+    s += Ln(apex[0], apex[1], 160, 165, { dash: 1, w: 1.6 });
+    if (o.cut) { const t = o.cut; const lerp = (p) => [apex[0] + (p[0] - apex[0]) * t, apex[1] + (p[1] - apex[1]) * t]; s += PL([lerp(A), lerp(B), lerp(C), apex], { fill: 'none', w: 2 }); s += Ln(...lerp(A), ...lerp(B), { w: 3 }) + Ln(...lerp(B), ...lerp(C), { w: 3 }); if (o.cutLab) s += T(lerp(B)[0] + 14, lerp(B)[1] + 4, o.cutLab, { acc: 1, a: 'start' }); }
+    s += T(130, 214, base, { acc: 1 }); if (h) s += T(168, 110, h, { acc: 1, a: 'start' });
+    return sv(320, 225, s, 'Square-based pyramid') + nd;
+  }
+  function twoCones(o) {
+    let s = `<path d="M30,100 L150,40 L150,160 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/><path d="M290,100 L150,40 L150,160 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += `<ellipse cx="150" cy="100" rx="16" ry="60" fill="var(--svgfill)" stroke="currentColor" stroke-width="2" stroke-dasharray="6 5"/>` + Ln(150, 100, 150, 40, { w: 2 }) + T(140, 74, 'r', { acc: 1, a: 'end' });
+    s += T(80, 58, o.l1, { acc: 1 }) + T(232, 58, o.l2, { acc: 1 });
+    return sv(320, 185, s, 'Two cones joined at their bases') + nd;
+  }
+  function spheresInCyl() {
+    let s = `<rect x="110" y="10" width="80" height="320" fill="none" stroke="currentColor" stroke-width="2.5"/>`;
+    for (let i = 0; i < 4; i++) s += `<circle cx="150" cy="${50 + i * 80}" r="40" fill="var(--svgfill)" stroke="currentColor" stroke-width="2"/>`;
+    s += Ln(150, 50, 190, 50, { w: 2 }) + T(170, 44, 'r', { acc: 1 }) + T(200, 175, '8r', { acc: 1, a: 'start' });
+    return sv(300, 340, s, 'Four spheres inside a cylinder');
+  }
+  function hemiAndCyl() {
+    let s = `<path d="M30,140 A60,60 0 0,1 150,140 A60,16 0 0,1 30,140 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + Ln(90, 140, 150, 140, { w: 2 }) + T(120, 134, 'x', { acc: 1 });
+    s += `<path d="M180,90 L180,150 A60,14 0 0,0 300,150 L300,90" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/><ellipse cx="240" cy="90" rx="60" ry="14" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + Ln(240, 90, 300, 90, { w: 2 }) + T(270, 84, '2x', { acc: 1 }) + T(306, 124, 'x', { acc: 1, a: 'start' });
+    s += T(90, 182, 'Hemisphere', { sm: 1 }) + T(240, 182, 'Cylinder', { sm: 1 });
+    return sv(330, 190, s, 'Hemisphere and cylinder') + nd;
+  }
+  function twoBoxes(a, b) {
+    return `<div class="figrow">${cuboid('', a.w, a.h, { flat: 1 })}${cuboid('', b.w, b.h)}</div>`;
+  }
+
+  /* ---------- circles ---------- */
+  const C0 = (cx, cy, r, fill) => `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill || 'var(--svgfill)'}" stroke="currentColor" stroke-width="2.5"/>`;
+  function circle(lab, o = {}) {
+    let s = C0(150, 110, 90, o.shadeQ ? 'none' : undefined) + `<circle cx="150" cy="110" r="3" fill="currentColor"/>`;
+    if (o.shadeQ) s += `<path d="M150,110 L240,110 A90,90 0 0,1 150,200 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    if (o.circ) s += T(150, 222, lab, { acc: 1 }); else s += Ln(150, 110, 240, 110, { w: 2 }) + T(195, 102, lab, { acc: 1 });
+    return sv(300, o.circ ? 232 : 210, s, 'Circle') + nd;
+  }
+  function ring(R, rLab) {
+    let s = `<path d="M60,110 a90,90 0 1,0 180,0 a90,90 0 1,0 -180,0 M114,110 a36,36 0 1,1 72,0 a36,36 0 1,1 -72,0" fill="var(--svgfill)" fill-rule="evenodd" stroke="currentColor" stroke-width="2.5"/>`;
+    s += `<circle cx="150" cy="110" r="3" fill="currentColor"/>` + Ln(150, 110, 240, 110, { w: 2 }) + T(212, 102, R, { acc: 1 }) + (rLab ? Ln(150, 110, 150, 74, { w: 2 }) + T(144, 96, rLab, { acc: 1, a: 'end' }) : '');
+    return sv(300, 210, s, 'Ring shape') + nd;
+  }
+  function circleInSquare(lab) {
+    let s = `<rect x="60" y="20" width="180" height="180" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + C0(150, 110, 90, 'var(--surface)') + T(150, 222, lab, { acc: 1 });
+    return sv(300, 232, s, 'Circle inside a square, the area outside the circle is shaded') + `<p class="small mut center" style="margin:-8px 0 12px">The shaded part is outside the circle.</p>`;
+  }
+  function squareInCircle(lab) {
+    const r = 95, h = r / Math.SQRT2;
+    let s = C0(150, 115, r) + PL([[150 - h, 115 - h], [150 + h, 115 - h], [150 + h, 115 + h], [150 - h, 115 + h]], { fill: 'var(--surface)' }) + T(150, 115 + h + 22, lab, { acc: 1 });
+    return sv(300, 225, s, 'Square with its corners on a circle') + nd;
+  }
+  function semiInCircle(R, d) {
+    let s = C0(150, 110, 90, 'none') + `<path d="M114,110 A36,36 0 0,1 186,110 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += `<circle cx="150" cy="110" r="3" fill="currentColor"/>` + Ln(150, 110, 150 + 90 * Math.cos(rad(-35)), 110 - 90 * Math.sin(rad(-35)), { w: 2 }) + T(210, 150, R, { acc: 1 }) + T(150, 128, d, { acc: 1, sm: 1 });
+    return sv(300, 210, s, 'A shaded semicircle inside a circle') + nd;
+  }
+  function sector(angLab, rLab, o = {}) {
+    const cx = 60, cy = 170, R = 190, a = o.deg || 50;
+    let s = `<path d="M${cx},${cy} L${cx + R},${cy} A${R},${R} 0 0,0 ${r1(cx + R * Math.cos(rad(a)))},${r1(cy - R * Math.sin(rad(a)))} Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += PATH(`M${cx + 34},${cy} A34,34 0 0,0 ${r1(cx + 34 * Math.cos(rad(a)))},${r1(cy - 34 * Math.sin(rad(a)))}`, { w: 1.6 }) + T(cx + 52 * Math.cos(rad(a / 2)), cy - 52 * Math.sin(rad(a / 2)) + 5, angLab, { acc: 1 });
+    s += T(cx + R / 2, cy + 22, rLab, { acc: 1 }) + T(cx - 10, cy + 6, 'O', { a: 'end' });
+    if (o.arc) s += T(cx + (R + 18) * Math.cos(rad(a / 2)), cy - (R + 18) * Math.sin(rad(a / 2)), o.arc, { acc: 1, a: 'start' });
+    return sv(330, 200, s, 'Sector of a circle') + nd;
+  }
+  function semicircle(lab) {
+    let s = `<path d="M50,140 A100,100 0 0,1 250,140 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/><circle cx="150" cy="140" r="3" fill="currentColor"/>` + T(200, 162, lab, { acc: 1 }) + Ln(150, 140, 250, 140, { w: 2 });
+    return sv(300, 170, s, 'Semicircle') + nd;
+  }
+  function quarterCut(W, H, r) {
+    let s = `<path d="M30,40 L270,40 L270,${40 + 80} L${270 - 80},${40 + 80} A80,80 0 0,1 270,40" fill="none"/>`;
+    s = `<path d="M30,40 L190,40 A80,80 0 0,0 270,120 L270,120 L270,120 L30,120 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>`;
+    s += PATH('M190,40 L270,40 L270,120', { dash: 1, w: 1.6 }) + T(150, 142, W, { acc: 1 }) + T(22, 85, H, { acc: 1, a: 'end' }) + T(232, 34, r, { acc: 1 });
+    return sv(300, 150, s, 'Rectangle with a quarter circle cut from one corner') + nd;
+  }
+  function pizzas(a, b) {
+    const one = (cx, R, frac, lab) => { const a2 = 360 * frac; return C0(cx, 100, R, 'none') + `<path d="M${cx},100 L${cx + R},100 A${R},${R} 0 ${a2 > 180 ? 1 : 0},0 ${r1(cx + R * Math.cos(rad(a2)))},${r1(100 - R * Math.sin(rad(a2)))} Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + T(cx, 100 + R + 24, lab, { sm: 1 }); };
+    return sv(330, 200, one(85, 60, a.f, a.l) + one(245, 70, b.f, b.l), 'Two pizzas with the eaten slices shaded') + nd;
+  }
+  function tangentChord(ang, ask) {
+    const cx = 150, cy = 110, R = 80, A = [cx, cy + R], Bang = rad(-90 + 124), B = [cx + R * Math.cos(rad(-90 + 2 * 62 + 0)), cy + R * Math.sin(rad(-90 + 2 * 62))];
+    const bx = cx + R * Math.cos(rad(90 - 124)), by = cy + R * Math.sin(rad(90 - 124));
+    let s = C0(cx, cy, R, 'none') + Ln(20, A[1], 280, A[1], { w: 2.5 }) + Ln(A[0], A[1], bx, by, { w: 2.5 }) + Ln(cx, cy, A[0], A[1], { w: 2 }) + Ln(cx, cy, bx, by, { w: 2 }) + `<circle cx="${cx}" cy="${cy}" r="3" fill="currentColor"/>`;
+    s += T(cx - 12, cy, 'O', { a: 'end' }) + T(A[0], A[1] + 22, 'A') + T(bx + 14, by, 'B', { a: 'start' }) + T(A[0] + 52, A[1] - 8, ang, { acc: 1 }) + T(cx + 22, cy + 22, ask, { acc: 1 });
+    return sv(300, 215, s, 'Circle with a tangent and a chord') + nd;
+  }
+  function squareQuarter() {
+    const O = [40, 210], R = 170, h = R / Math.SQRT2;
+    let s = PATH(`M${O[0] + R},${O[1]} A${R},${R} 0 0,0 ${O[0]},${O[1] - R}`, { w: 2.5 }) + Ln(O[0], O[1], O[0] + R + 10, O[1], { w: 1.6 }) + Ln(O[0], O[1], O[0], O[1] - R - 10, { w: 1.6 });
+    s += PL([O, [O[0] + h, O[1]], [O[0] + h, O[1] - h], [O[0], O[1] - h]]) + T(O[0] - 10, O[1] + 18, 'O') + T(O[0] + h + 8, O[1] + 18, 'P') + T(O[0] + h + 12, O[1] - h - 8, 'Q', { a: 'start' }) + T(O[0] - 12, O[1] - h, 'R', { a: 'end' });
+    return sv(260, 240, s, 'Square OPQR with corner O at the centre of a circle and Q on the circle') + `<p class="small mut center" style="margin:-8px 0 12px">Part of the circle is shown. O is the centre.</p>`;
+  }
+
+  /* ---------- charts and probability ---------- */
+  const PAL = ['var(--svgfill)', 'var(--fig2,#FFD9A8)', 'var(--fig3,#C9F0D6)', 'var(--fig4,#FFC9D6)', 'var(--fig5,#CFE8FF)', 'var(--fig6,#EEE)'];
+  function pie(secs, title = '') { // secs: [{l, a, show}]
+    const cx = 165, cy = 120, R = 92; let a0 = 90, s = '';
+    secs.forEach((x, i) => {
+      const a1 = a0 - x.a, large = x.a > 180 ? 1 : 0;
+      s += `<path d="M${cx},${cy} L${r1(cx + R * Math.cos(rad(a0)))},${r1(cy - R * Math.sin(rad(a0)))} A${R},${R} 0 ${large},1 ${r1(cx + R * Math.cos(rad(a1)))},${r1(cy - R * Math.sin(rad(a1)))} Z" fill="${PAL[i % PAL.length]}" stroke="currentColor" stroke-width="2"/>`;
+      const m = (a0 + a1) / 2, lx = cx + (R + 14) * Math.cos(rad(m)), ly = cy - (R + 14) * Math.sin(rad(m));
+      s += T(lx, ly + 5, x.l, { a: Math.cos(rad(m)) > 0.15 ? 'start' : Math.cos(rad(m)) < -0.15 ? 'end' : 'middle' });
+      if (x.show !== false) s += T(cx + R * 0.58 * Math.cos(rad(m)), cy - R * 0.58 * Math.sin(rad(m)) + 5, x.a + '°');
+      a0 = a1;
+    });
+    return (title ? `<p class="center small" style="margin:0"><b>${title}</b></p>` : '') + sv(340, 240, s, 'Pie chart') + `<p class="small mut center" style="margin:-8px 0 12px">Not drawn accurately</p>`;
+  }
+  function tree(first, second, o = {}) { // first: [{l,p}], second: [[{l,p}], ...] or one array used for all branches
+    const n1 = first.length, rows = first.map((_, i) => Array.isArray(second[0]) ? second[i] : second);
+    const total = rows.reduce((a, r) => a + (r ? r.length : 0), 0) || n1;
+    const H = Math.max(total * 46, n1 * 70) + 40, W = 340;
+    let s = ''; let yy = 30; const x0 = 10, x1 = 120, x2 = 250;
+    if (o.h1) s += T((x0 + x1) / 2 + 20, 16, o.h1, { sm: 1 }); if (o.h2) s += T((x1 + x2) / 2 + 50, 16, o.h2, { sm: 1 });
+    const mid0 = H / 2 + 10;
+    first.forEach((f, i) => {
+      const r = rows[i] || [], span = Math.max(r.length, 1) * 46, ymid = yy + span / 2;
+      s += Ln(x0 + 8, mid0, x1 - 4, ymid, { w: 2 }) + T(x1 + 2, ymid + 5, f.l, { a: 'start', sm: f.l.length > 9 });
+      s += T((x0 + x1) / 2, (mid0 + ymid) / 2 - 6, f.p, { acc: 1 });
+      r.forEach((g, j) => { const y2 = yy + 23 + j * 46, xs = x1 + Math.min(80, f.l.length * 7.5 + 12); s += Ln(xs, ymid, x2 - 4, y2, { w: 2 }) + T(x2 + 2, y2 + 5, g.l, { a: 'start', sm: g.l.length > 9 }) + T((xs + x2) / 2, (ymid + y2) / 2 - 6, g.p, { acc: 1 }); });
+      yy += span;
+    });
+    return sv(W, H, s, 'Tree diagram');
+  }
+  function spinner(secs, cols, lab) { // secs: labels, cols: indexes into PAL or 'red' etc.
+    const cx = 80, cy = 80, R = 66, n = secs.length; let s = '';
+    secs.forEach((l, i) => { const a0 = 90 - i * 360 / n, a1 = a0 - 360 / n; s += `<path d="M${cx},${cy} L${r1(cx + R * Math.cos(rad(a0)))},${r1(cy - R * Math.sin(rad(a0)))} A${R},${R} 0 0,1 ${r1(cx + R * Math.cos(rad(a1)))},${r1(cy - R * Math.sin(rad(a1)))} Z" fill="${l === 'R' || /red/i.test(l) ? 'var(--fig4,#FFC9D6)' : PAL[(cols && cols[i]) || 0]}" stroke="currentColor" stroke-width="2"/>`; const m = (a0 + a1) / 2; s += T(cx + R * 0.62 * Math.cos(rad(m)), cy - R * 0.62 * Math.sin(rad(m)) + 5, l, { sm: 1 }); });
+    s += `<circle cx="${cx}" cy="${cy}" r="4" fill="currentColor"/>` + Ln(cx, cy, cx + 9, cy - 20, { w: 3 }) + (lab ? T(cx, 170, lab, { sm: 1 }) : '');
+    return s;
+  }
+  function spinners(list) { // list: [{secs, lab}]
+    let s = ''; list.forEach((sp, i) => { s += `<g transform="translate(${i * 170},0)">${spinner(sp.secs, null, sp.lab)}</g>`; });
+    return sv(list.length * 170, 180, s, 'Spinner' + (list.length > 1 ? 's' : ''));
+  }
+  const venn = (a, c, b, n, la, lb) => svgVenn(a, c, b, n, la, lb);
+  function cards(nums) {
+    let s = ''; nums.forEach((v, i) => { const x = 8 + i * 52; s += `<rect x="${x}" y="8" width="44" height="60" rx="6" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + T(x + 22, 45, v); });
+    return sv(nums.length * 52 + 10, 76, s, 'Cards numbered ' + nums.join(', '));
+  }
+  function bags(list) { // list: [{name, items:[[label,count]]}]
+    let s = ''; list.forEach((b, i) => { const x = 10 + i * 160; s += `<path d="M${x + 20},40 Q${x},140 ${x + 30},150 L${x + 120},150 Q${x + 150},140 ${x + 130},40 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/><path d="M${x + 40},40 Q${x + 75},20 ${x + 110},40" fill="none" stroke="currentColor" stroke-width="2.5"/>` + T(x + 75, 172, b.name, { sm: 1 }); let k = 0; b.items.forEach(([l, c]) => { for (let j = 0; j < c; j++, k++) { const cx = x + 38 + (k % 4) * 25, cy = 64 + Math.floor(k / 4) * 26; s += `<rect x="${cx - 11}" y="${cy - 10}" width="22" height="20" rx="4" fill="var(--surface)" stroke="currentColor" stroke-width="1.6"/><text x="${cx}" y="${cy + 4}" text-anchor="middle" class="sl" style="font-size:8px">${l}</text>`; } }); });
+    return sv(list.length * 160 + 10, 182, s, 'Bags of cards');
+  }
+
+  /* ---------- tables ---------- */
+  function tbl(head, rows, o = {}) {
+    const th = head.map(h => `<th>${h}</th>`).join('');
+    const tr = rows.map(r => `<tr>${r.map((c, i) => i === 0 && o.rowHead ? `<th>${c}</th>` : `<td>${c === '' ? '&nbsp;' : c}</td>`).join('')}</tr>`).join('');
+    return `<div class="qtbl"${o.title ? ` aria-label="${o.title}"` : ''}>${o.title ? `<div class="qtbl-t">${o.title}</div>` : ''}<table><thead><tr>${th}</tr></thead><tbody>${tr}</tbody></table></div>`;
+  }
+  const freq = (col, rows, fcol = 'Frequency') => tbl([col, fcol], rows);
+  const across = (rows, o) => tbl(rows[0], rows.slice(1), Object.assign({ rowHead: true }, o));
+
+  /* ---------- bearings, maps, graphs ---------- */
+  function north(x, y, len = 60) { return Ln(x, y, x, y - len, { w: 2 }) + `<path d="M${x - 6},${y - len + 10} L${x},${y - len} L${x + 6},${y - len + 10}" fill="none" stroke="currentColor" stroke-width="2"/>` + T(x, y - len - 6, 'N', { sm: 1 }); }
+  function bearing(deg, a = 'P', b = 'Q') {
+    const P = [100, 140], L = 150, Q = [P[0] + L * Math.sin(rad(deg)), P[1] - L * Math.cos(rad(deg))];
+    let s = ARR + north(P[0], P[1], 80) + Ln(P[0], P[1], Q[0], Q[1], { w: 2.5, arrow: 1 }) + `<circle cx="${P[0]}" cy="${P[1]}" r="3.5" fill="currentColor"/>`;
+    s += PATH(`M${P[0]},${P[1] - 30} A30,30 0 ${deg > 180 ? 1 : 0},1 ${r1(P[0] + 30 * Math.sin(rad(deg)))},${r1(P[1] - 30 * Math.cos(rad(deg)))}`, { w: 1.6 }) + T(P[0] + 52 * Math.sin(rad(deg / 2)), P[1] - 52 * Math.cos(rad(deg / 2)) + 5, deg + '°', { acc: 1, sm: 1 });
+    s += T(P[0] - 14, P[1] + 6, a, { a: 'end' }) + T(Q[0] + 12, Q[1] + 6, b, { a: 'start' });
+    return sv(300, Math.max(190, Q[1] + 30), s, `Bearing of ${deg} degrees from ${a} to ${b}`) + nd;
+  }
+  function twoLegs(d1, d2, lab1, lab2) {
+    const P = [50, 90], L = 120, Q = [P[0] + L * Math.sin(rad(d1)), P[1] - L * Math.cos(rad(d1))], R = [Q[0] + L * Math.sin(rad(d2)), Q[1] - L * Math.cos(rad(d2))];
+    let s = north(P[0], P[1], 60) + north(Q[0], Q[1], 60) + Ln(P[0], P[1], Q[0], Q[1]) + Ln(Q[0], Q[1], R[0], R[1]) + Ln(P[0], P[1], R[0], R[1], { dash: 1, w: 1.6 });
+    s += T(P[0] - 12, P[1] + 5, 'P', { a: 'end' }) + T(Q[0] + 6, Q[1] - 10, 'Q', { a: 'start' }) + T(R[0], R[1] + 22, 'R');
+    s += T((P[0] + Q[0]) / 2, (P[1] + Q[1]) / 2 + 22, lab1, { acc: 1, sm: 1 }) + T((Q[0] + R[0]) / 2 + 30, (Q[1] + R[1]) / 2, lab2, { acc: 1, sm: 1 });
+    s += T(P[0] + 16, P[1] - 34, d1 + '°', { sm: 1, a: 'start' }) + T(Q[0] + 16, Q[1] - 34, d2 + '°', { sm: 1, a: 'start' });
+    return sv(330, Math.max(R[1], Q[1]) + 40, s, 'Ship journey from P to Q to R') + nd;
+  }
+  function lineGraph(pts, o) { // pts in data units; o: {xmax, ymax, xstep, ystep, xl, yl}
+    const X = v => 50 + v / o.xmax * 250, Y = v => 180 - v / o.ymax * 150;
+    let s = Ln(50, 180, 305, 180, { w: 2 }) + Ln(50, 180, 50, 22, { w: 2 });
+    for (let v = 0; v <= o.xmax; v += o.xstep) s += Ln(X(v), 180, X(v), 30, { w: 0.6 }) + T(X(v), 196, v, { sm: 1 });
+    for (let v = 0; v <= o.ymax; v += o.ystep) s += Ln(50, Y(v), 300, Y(v), { w: 0.6 }) + T(44, Y(v) + 4, v, { sm: 1, a: 'end' });
+    s += `<polyline points="${pts.map(p => r1(X(p[0])) + ',' + r1(Y(p[1]))).join(' ')}" fill="none" stroke="var(--brand,#3A10E5)" stroke-width="3.5"/>`;
+    s += T(178, 216, o.xl, { sm: 1 }) + T(14, 104, o.yl, { sm: 1, rot: -90 });
+    return sv(320, 224, s, 'Line graph');
+  }
+  function cliff(h, ang) {
+    let s = `<path d="M230,30 L300,30 L300,180 L230,180 Z" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + Ln(10, 180, 310, 180, { w: 2.5 }) + Ln(70, 180, 230, 30, { dash: 1, w: 2 }) + `<circle cx="70" cy="180" r="4" fill="currentColor"/>`;
+    s += PATH('M110,180 A40,40 0 0,0 99,153', { w: 1.6 }) + T(120, 166, ang, { acc: 1, a: 'start', sm: 1 }) + T(222, 110, h, { acc: 1, a: 'end' }) + T(70, 200, 'P');
+    return sv(320, 210, s, 'Cliff and point P') + nd;
+  }
+  function vtGraph(pts, o) { return lineGraph(pts, o); }
+
+  return { machine, poly, rightTri, rays, parallels, regPoly, cuboid, triPrism, paraPrism, cylinder, cone, sphere, hemisphere, cornet, pyramid, twoCones, spheresInCyl, hemiAndCyl, twoBoxes, circle, ring, circleInSquare, squareInCircle, semiInCircle, sector, semicircle, quarterCut, pizzas, tangentChord, squareQuarter, pie, tree, spinners, venn, cards, bags, tbl, freq, across, bearing, twoLegs, lineGraph, cliff, vtGraph, nd, NOTE };
+})();
+
+/* =========================================================
+   DIAGRAMS FOR DIAGNOSTIC QUESTIONS
+   Each entry: 'variantId|questionRef': [new question text or null, figure]
+   The wording follows the style of the real paper ("Here is a number machine.")
+   with a drawing wherever the real paper had one.
+   ========================================================= */
+(function () {
+  const ra = (p, a, b) => { const ua = [a[0] - p[0], a[1] - p[1]], ub = [b[0] - p[0], b[1] - p[1]], la = Math.hypot(...ua), lb = Math.hypot(...ub), k = 13; const p1 = [p[0] + ua[0] / la * k, p[1] + ua[1] / la * k], p3 = [p[0] + ub[0] / lb * k, p[1] + ub[1] / lb * k], p2 = [p1[0] + ub[0] / lb * k, p1[1] + ub[1] / lb * k]; return `<polyline points="${p1} ${p2} ${p3}" fill="none" stroke="currentColor" stroke-width="1.6"/>`; };
+  const ln = (a, b, dash) => `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="currentColor" stroke-width="2.5"${dash ? ' stroke-dasharray="6 5"' : ''}/>`;
+  const tx = (x, y, s, acc) => `<text x="${x}" y="${y}" text-anchor="middle" class="sl${acc ? ' acc' : ''}">${s}</text>`;
+  const triAngles = (angA, angB, c = 7) => { const A = [0, 0], B = [c, 0]; const ta = Math.tan(angA * Math.PI / 180), tb = Math.tan(angB * Math.PI / 180); const x = c * tb / (ta + tb); return [A, B, [x, -x * ta]]; };
+  const rects = (list) => { let x = 10, s = '', H = 0; list.forEach(r => { const w = r.w * r.k, h = r.h * r.k; s += `<rect x="${x}" y="${20}" width="${w}" height="${h}" fill="var(--svgfill)" stroke="currentColor" stroke-width="2.5"/>` + tx(x + w / 2, 20 + h / 2 + 5, r.name || '') + tx(x + w / 2, 14, r.top || '', 1) + `<text x="${x + w + 6}" y="${20 + h / 2 + 5}" class="sl acc">${r.side || ''}</text>`; x += w + 130; H = Math.max(H, h); }); return `<svg class="qsvg fig" viewBox="0 0 ${x - 30} ${H + 40}" role="img" aria-label="Rectangles">${s}</svg>` + FG.nd; };
+
+  const F = {
+    /* ---------------- AQA 2024 / 2025 (variants A–F) ---------------- */
+    'F-A|Q23b': ['The diagram shows a prism. Its volume is 2400 cm³.<br>Work out the area of its cross-section.', FG.triPrism({ len: '30 cm' })],
+    'H-A|Q5b': ['The diagram shows a prism. Its volume is 4200 cm³.<br>Work out the area of its cross-section.', FG.triPrism({ len: '35 cm' })],
+    'F-B|Q6a': ['The diagram shows two angles on a straight line.<br>Work out the size of angle x.', FG.rays([52], ['128°', 'x'])],
+    'F-B|Q14': ['The pie chart shows the favourite fruit of some people.<br>60 people chose Banana. How many people chose Apple?', FG.pie([{ l: 'Banana', a: 72 }, { l: 'Apple', a: 108 }, { l: 'Orange', a: 120 }, { l: 'Pear', a: 60 }], 'Favourite fruit')],
+    'F-B|Q22': ['Here is a right-angled triangle.<br>Work out the length x.<br><small>Give your answer to 1 decimal place.</small>', FG.rightTri({ left: 'x', hyp: '12 cm', a: { 2: '35°' } })],
+    'F-C|Q26': ['Here is a hemisphere of radius 6 cm.<br>Work out its volume in terms of π.<br><small>Type the number in front of π.</small>', FG.hemisphere('6 cm')],
+    'F-D|Q13': ['The diagram shows three angles on a straight line.<br>Work out the value of x.', FG.rays([96, 48], ['3x', 'x + 20', '2x − 8'])],
+    'F-D|Q15b': ['Here is a sphere with diameter 12 cm. Volume of a sphere = ⁴⁄₃πr³<br>Work out its volume in terms of π.<br><small>Type the number in front of π.</small>', FG.sphere('12 cm', { diam: 1 })],
+    'F-E|Q19b': ['Here are two fair spinners. Both are spun once.<br>Work out the probability that both land on red (R).', FG.spinners([{ secs: ['R', 'B', 'Y', 'R', 'B', 'Y', 'B'], lab: 'Spinner 1' }, { secs: ['R', 'B', 'Y', 'G'], lab: 'Spinner 2' }])],
+    'F-E|Q25a': ['A circle has circumference 24 cm. A quarter of the circle is shaded.<br>Work out the shaded area.<br><small>1 decimal place.</small>', FG.circle('Circumference = 24 cm', { circ: 1, shadeQ: 1 })],
+    'F-E|Q26': ['Here is a right-angled triangle.<br>Work out the length x.<br><small>1 decimal place.</small>', FG.rightTri({ left: 'x', bottom: '15 cm', a: { 2: '40°' } })],
+    'F-F|Q4a': ['Here is a number machine.<br>Work out the output when the input is 6.', FG.machine(['× 3', '− 5'], '6', '?')],
+    'F-F|Q4b': ['Here is the same number machine.<br>The output is 22. Work out the input.', FG.machine(['× 3', '− 5'], '?', '22')],
+    'F-F|Q14b': ['A bag has 800 cards. Each card is red, blue, green or yellow. The table shows the probability of picking each colour.<br>The probability of green is the same as the probability of yellow.<br>How many cards are <b>not</b> blue?', FG.across([['Colour', 'Red', 'Blue', 'Green', 'Yellow'], ['Probability', '0.15', '0.3', 'x', 'x']])],
+    'F-F|Q16': ['Here is an equilateral triangle. The lengths are in centimetres.<br>Work out its perimeter.', FG.poly([[0, 8.66], [10, 8.66], [5, 0]], { s: { 0: '5x − 6', 1: '3x + 2' }, tick: [0, 1, 2], size: 200 })],
+    'F-F|Q18': ['The pie chart shows the results of a team\'s matches. 45 matches were won.<br>How many matches were lost?', FG.pie([{ l: 'Won', a: 135 }, { l: 'Lost', a: 75 }, { l: 'Drawn', a: 150 }], 'Match results')],
+    'F-F|Q23': ['Here is a right-angled triangle.<br>Work out the length x.<br><small>1 decimal place.</small>', FG.rightTri({ left: '7 cm', bottom: '8 cm', hyp: 'x' })],
+    'H-A|Q7': ['The shaded ring is made by cutting a small circle from the middle of a large circle. The large circle has radius 10 cm.<br>large radius : small radius = 5 : 2<br>Work out the shaded area in terms of π.<br><small>Type the number in front of π.</small>', FG.ring('10 cm')],
+    'H-B|Q2': ['The table shows some data. Estimate the mean.<br><small>1 decimal place.</small>', FG.freq('Value, x', [['0 < x ≤ 10', 12], ['10 < x ≤ 20', 18], ['20 < x ≤ 30', 20], ['30 < x ≤ 40', 10]])],
+    'H-B|Q23a': ['A, B are points on a circle, centre O. The line at A is a tangent.<br>The chord AB makes an angle of 62° with the tangent.<br>Work out the size of angle AOB, marked x.', FG.tangentChord('62°', 'x')],
+    'H-C|Q19': ['Here is triangle ABC.<br>Work out the length AC, marked x.<br><small>1 decimal place.</small>', FG.poly(triAngles(40, 65), { v: ['A', 'B', 'C'], s: { 1: '9 cm', 2: 'x' }, a: { 0: '40°', 1: '65°' } })],
+    'H-D|Q10': ['The area of this rectangle is 91 cm².<br>Work out the value of x.', rects([{ w: 13, h: 7, k: 14, top: '(x + 4) cm', side: '(x − 2) cm' }])],
+    'H-E|Q10': ['Here is a right-angled triangle.<br>Work out the length x.<br><small>1 decimal place.</small>', FG.rightTri({ bottom: 'x', hyp: '14 cm', a: { 2: '52°' } })],
+    'H-E|Q11': ['The diagram shows a regular decagon (10 sides).<br>Work out the size of the interior angle x.', FG.regPoly(10, 'int', 'x')],
+    'H-F|Q5': ['The pie chart shows the results of a team\'s matches. 36 matches were won.<br>How many matches were lost?', FG.pie([{ l: 'Won', a: 144 }, { l: 'Lost', a: 60 }, { l: 'Drawn', a: 156 }], 'Match results')],
+    'H-F|Q12': ['The table shows the journey times of 80 people this year. Last year the mean was 26 minutes.<br>Estimate the percentage increase in the mean.', FG.freq('Time, t (minutes)', [['20 < t ≤ 25', 10], ['25 < t ≤ 30', 30], ['30 < t ≤ 40', 30], ['40 < t ≤ 60', 10]])],
+    'H-F|Q21': ['Four identical spheres of radius r fit exactly inside a cylinder of radius r and height 8r.<br>What fraction of the cylinder do the spheres fill?', FG.spheresInCyl()],
+    'H-F|Q24': ['Triangles A and B are similar. The area of triangle A is 28 cm².<br>Work out the area of triangle B.', `<div class="figrow">${FG.poly([[0, 4], [6, 4], [2, 0]], { s: { 0: '6 cm' }, size: 130, label: 'Triangle A', nd: false })}${FG.poly([[0, 4], [6, 4], [2, 0]], { s: { 0: '9 cm' }, size: 195, label: 'Triangle B', nd: false })}</div><p class="small mut center" style="margin:-6px 0 12px">Triangle A (left) and triangle B (right)</p>`],
+
+    /* ---------------- AQA 2019–2023 ---------------- */
+    'F-J23-1|Q17': ['ABC is a straight line.<br>Work out the size of angle EBD.', FG.rays([150, 95], ['x', '4x', '5x'], { letters: ['A', 'B', 'C'], rl: ['E', 'D'] })],
+    'H-J23-1|Q4': ['ABC is a straight line.<br>Work out the size of angle EBD.', FG.rays([150, 95], ['x', '4x', '5x'], { letters: ['A', 'B', 'C'], rl: ['E', 'D'] })],
+    'F-J23-2|Q19a': ['The diagram shows a regular octagon.<br>Work out the size of the interior angle x.', FG.regPoly(8, 'int', 'x')],
+    'H-J23-2|Q6a': ['The diagram shows a regular octagon.<br>Work out the size of the exterior angle x.', FG.regPoly(8, 'ext', 'x')],
+    'F-J23-2|Q22': ['Rectangles P and Q are similar.<br>What is the scale factor of the enlargement from P to Q?', rects([{ w: 5, h: 3, k: 14, name: 'P', top: '5 cm', side: '3 cm' }, { w: 12.5, h: 7.5, k: 14, name: 'Q', top: '12.5 cm', side: '7.5 cm' }])],
+    'F-J22-1|Q4': ['ABC is an isosceles triangle with AB = AC.<br>The perimeter of the triangle is 26 cm. Work out the length of AB.', FG.poly([[3, 0], [0, 9], [6, 9]], { v: ['A', 'B', 'C'], s: { 1: '6 cm' }, tick: [0, 2], size: 160 })],
+    'F-N21-1|Q14': ['Counters in a bag are red, white or blue. A counter is picked at random.<br>Complete the table: work out the probability of blue.', FG.across([['Colour', 'Red', 'White', 'Blue'], ['Probability', '0.25', '0.4', '?']])],
+    'F-N21-2|Q16': ['AB is parallel to CD.<br>Work out the size of angle x.', FG.parallels('118°', 'x', 'co')],
+    'F-N21-2|Q24a': ['Here is a right-angled triangle.<br>Work out the length of the hypotenuse, x.<br><small>1 decimal place.</small>', FG.rightTri({ left: '7 cm', bottom: '11 cm', hyp: 'x' })],
+    'F-N21-2|Q27': ['A ball contains 6000 cm³ of air. Air is pumped in at 150 cm³ per second.<br>The ball is full when it is a sphere of radius 14 cm. Volume of a sphere = ⁴⁄₃πr³<br>How many seconds does it take to fill the ball? <small>(nearest second)</small>', FG.sphere('14 cm')],
+    'H-N21-2|Q9': ['A ball contains 6000 cm³ of air. Air is pumped in at 150 cm³ per second.<br>The ball is full when it is a sphere of radius 14 cm. Volume of a sphere = ⁴⁄₃πr³<br>How many seconds does it take to fill the ball? <small>(nearest second)</small>', FG.sphere('14 cm')],
+    'F-J19-1|Q21b': ['Anna rolls a fair dice. If she rolls 1 she wins; 2 or 3 she loses; 4, 5 or 6 she rolls again. On the second roll an odd number wins and an even number loses.<br>Use the tree diagram to work out the probability that she wins.', FG.tree([{ l: 'Win (1)', p: '1/6' }, { l: 'Lose (2, 3)', p: '2/6' }, { l: 'Roll again', p: '3/6' }], [[], [], [{ l: 'Win (odd)', p: '?' }, { l: 'Lose (even)', p: '?' }]], { h1: '1st roll', h2: '2nd roll' })],
+    'H-J19-1|Q6b': ['Anna rolls a fair dice. If she rolls 1 she wins; 2 or 3 she loses; 4, 5 or 6 she rolls again. On the second roll an odd number wins and an even number loses.<br>Use the tree diagram to work out the probability that she wins.', FG.tree([{ l: 'Win (1)', p: '1/6' }, { l: 'Lose (2, 3)', p: '2/6' }, { l: 'Roll again', p: '3/6' }], [[], [], [{ l: 'Win (odd)', p: '?' }, { l: 'Lose (even)', p: '?' }]], { h1: '1st roll', h2: '2nd roll' })],
+    'F-J19-2|Q8a': ['The interior angle of a regular hexagon is 120°.<br>Work out the total of the six reflex angles at the vertices (one is marked r).', FG.regPoly(6, 'reflex', 'r')],
+    'F-J19-2|Q13': ['Shapes A and B are similar. Lengths in A : lengths in B = 3 : 7.<br>The perimeter of A is 240 mm. Work out the perimeter of B.', rects([{ w: 6, h: 3, k: 12, name: 'A' }, { w: 14, h: 7, k: 12, name: 'B' }])],
+    'F-J19-2|Q22': ['The diagram shows rectangle ABDE and right-angled triangle ABC.<br>AC = 13 cm, BC = 5 cm and BC : CD = 1 : 2<br>Work out the area of rectangle ABDE.', FG.poly([[0, 0], [0, 12], [5, 12], [15, 12], [15, 0]], { v: ['A', 'B', 'C', 'D', 'E'], s: { 1: '5 cm' }, r: [1], size: 230, extra: P => `<line x1="${P[0][0]}" y1="${P[0][1]}" x2="${P[2][0]}" y2="${P[2][1]}" stroke="currentColor" stroke-width="2.5"/><text x="${(P[0][0] + P[2][0]) / 2 + 16}" y="${(P[0][1] + P[2][1]) / 2}" class="sl acc">13 cm</text>` })],
+    'H-J19-1|Q3': ['Here is a semicircle of radius 8 m.<br>What is the length of the curved edge (the arc)?', FG.semicircle('8 m')],
+    'H-J19-1|Q9': ['A shaded semicircle is drawn inside a circle. The circle has radius 12 cm. The semicircle has diameter 12 cm.<br>How many times bigger is the unshaded area than the shaded area?', FG.semiInCircle('r = 12 cm', 'diameter 12 cm')],
+    'H-J19-2|Q13': ['The table shows how much 40 boys spent on clothes in one month. The mean for the girls was £36.<br>Estimate the girls\' mean as a percentage of the boys\' mean <small>(nearest %)</small>.', FG.tbl(['Amount, £x', 'Number of boys'], [['0 ≤ x < 20', 20], ['20 ≤ x < 40', 10], ['40 ≤ x < 60', 6], ['60 ≤ x < 80', 4]])],
+    'H-J19-2|Q21': ['A solid is made by joining two cones with the same radius r.<br>One cone has slant height 2r, the other has slant height 4r. Curved surface area of a cone = πrl<br>The total surface area is 54π cm². Work out r.', FG.twoCones({ l1: '2r', l2: '4r' })],
+    'H-J23-1|Q17': ['A solid hemisphere has radius x. A solid cylinder has radius 2x and height x.<br>Write total surface area of hemisphere : total surface area of cylinder in its simplest form.', FG.hemiAndCyl()],
+    'H-J23-1|Q26': ['O is the centre of a circle with circumference 16π cm. OPQR is a square with Q on the circle.<br>perimeter of square : circumference of circle = a : π. Work out a.', FG.squareQuarter()],
+    'H-J23-2|Q14c': ['The table shows the hourly pay of 120 people. Estimate the mean hourly pay.<br><small>2 decimal places.</small>', FG.freq('Hourly pay, £p', [['10 < p ≤ 14', 60], ['14 < p ≤ 20', 30], ['20 < p ≤ 40', 20], ['40 < p ≤ 100', 10]])],
+    'H-J22-1|Q12b': ['A game uses these two bags. One card is taken at random from each bag. 500 people play.<br>How many people would you expect to get two "Yes" cards?', FG.bags([{ name: 'Bag A', items: [['Yes', 3], ['No', 2]] }, { name: 'Bag B', items: [['Yes', 1], ['No', 4]] }])],
+    'H-J22-1|Q25b': ['The speed–time graph shows a car\'s journey.<br>Work out the total distance travelled.', FG.vtGraph([[0, 0], [10, 20], [30, 20], [40, 0]], { xmax: 40, ymax: 25, xstep: 10, ystep: 5, xl: 'Time (seconds)', yl: 'Speed (m/s)' })],
+    'H-J22-2|Q13a': ['A model ice-cream cornet is made from a cone and a hemisphere. Both have radius 20 cm. The cone has height 90 cm.<br>Volume of a cone = ⅓πr²h, volume of a sphere = ⁴⁄₃πr³<br>Work out the total volume <small>(nearest cm³)</small>.', FG.cornet({ r: '20 cm', h: '90 cm' })],
+    'H-N21-1|Q19b': ['Items made in a factory go through two checks. Items that fail a check are scrapped.<br>Use the tree diagram to work out the probability that an item is scrapped.', FG.tree([{ l: 'Pass', p: '0.8' }, { l: 'Fail', p: '?' }], [[{ l: 'Pass', p: '0.95' }, { l: 'Fail', p: '?' }], []], { h1: '1st check', h2: '2nd check' })],
+    'H-N21-2|Q17b': ['The table shows whether 11 males use a laptop or a phone more. Two of these males are chosen at random.<br>Work out the probability that both said phone.', FG.across([['', 'Laptop', 'Phone'], ['Male', '3', '8']])],
+    'H-N21-2|Q23': ['A ship sails from P to Q and then from Q to R.<br>Work out the direct distance PR.<br><small>1 decimal place.</small>', FG.poly([[-10, 0], [0, 0], [24 * Math.cos(75 * Math.PI / 180), -24 * Math.sin(75 * Math.PI / 180)]], { v: ['P', 'Q', 'R'], s: { 0: '10 miles', 1: '24 miles', 2: 'x' }, a: { 1: '105°' }, size: 230 })],
+
+    /* ---------------- Eduqas ---------------- */
+    'F-EQ-J25-1|Q7b': ['Here is a number machine.<br>When the input is 60, the output is 22. Find the value of x.', FG.machine(['÷ 4', '+ x'], '60', '22')],
+    'F-EQ-J25-1|Q23a': ['152 pupils were given English and French homework. 10 did not complete either.<br>The Venn diagram shows the numbers who completed each homework.<br>Find the value of x.', FG.venn('2x + 9', '5x − 7', '3x', '10', 'English', 'French')],
+    'F-EQ-J25-1|Q25': ['Pressure = Force ÷ Area. A cuboid rests on the floor. It exerts a force of 7.2 N and a pressure of 0.04 N/cm².<br>The base of the cuboid is 9 cm wide. Find the length of the base.', FG.cuboid('length = ?', '9 cm', '')],
+    'F-EQ-J25-2|Q5a': ['The pie chart shows the favourite pets of a group of students.<br>What fraction chose hamster? Give your answer in its simplest form.', FG.pie([{ l: 'cat', a: 90 }, { l: 'dog', a: 150 }, { l: 'rabbit', a: 60 }, { l: 'hamster', a: 60, show: false }], 'Favourite pet')],
+    'F-EQ-J25-2|Q18d': ['The table shows the prices of 35 houses on a street. Estimate the mean price.<br><small>Give your answer in £ thousands to 1 d.p.</small>', FG.freq('Price, p (£ thousand)', [['100 < p ≤ 150', 8], ['150 < p ≤ 200', 12], ['200 < p ≤ 250', 10], ['250 < p ≤ 300', 4], ['300 < p ≤ 350', 1]])],
+    'F-EQ-J24-1|Q18': ['The perimeter of this rectangle is 46 cm.<br>Calculate the value of x.', rects([{ w: 15, h: 8, k: 13, top: '15 cm', side: '(3x − 1) cm' }])],
+    'F-EQ-J24-2|Q1a': ['A shop sells bracelets. Words can be engraved and charms added. Here is the price list.<br>Rhian buys a bracelet with a 6-letter word engraved on it and a heart charm. What is the total cost?', FG.tbl(['Item', 'Price'], [['Bracelet', '£45'], ['Star charm', '£37.54'], ['Heart charm', '£13.20'], ['Flower charm', '£18'], ['Engraving', '84p for each letter']])],
+    'F-EQ-J24-2|Q1c': ['Here is the price list again. A voucher gives one bracelet and five flower charms for £120.<br>How much cheaper is it to use the voucher than to pay the usual price?', FG.tbl(['Item', 'Price'], [['Bracelet', '£45'], ['Star charm', '£37.54'], ['Heart charm', '£13.20'], ['Flower charm', '£18'], ['Engraving', '84p for each letter']])],
+    'F-EQ-J24-2|Q8ai': ['Here is a number machine.<br>When the output is 67.4, what is the input?', FG.machine(['× 7.2', '− 4.6'], '?', '67.4')],
+    'F-EQ-J24-2|Q8aii': ['Here is a different number machine.<br>When the input is 36, the output is 42.5. Find the value of a.', FG.machine(['÷ a', '+ 12.5'], '36', '42.5')],
+    'F-EQ-J23-1|Q17': ['The bearing of Q from P is 115°.<br>Find the bearing of P from Q.', FG.bearing(115)],
+    'H-EQ-J23-1|Q2': ['The bearing of Q from P is 115°.<br>Find the bearing of P from Q.', FG.bearing(115)],
+    'F-EQ-J23-1|Q21': ['The diagram shows a quadrilateral.<br>Use algebra to find the size of the exterior angle y.', FG.poly([[0, 6], [8, 6], [10, 1], [0, 0]], { r: [0], a: { 1: '70°', 2: '(x + 60)°', 3: '(x + 80)°' }, ext: { 3: 'y' }, size: 220 })],
+    'F-EQ-J23-1|Q24': ['The diagram shows a fair spinner. Eve spins it twice.<br>What is the probability that it lands on red (R) both times?', FG.spinners([{ secs: ['R', 'B', 'P', 'R', 'B', 'P', 'R', 'B', 'P', 'B'] }])],
+    'F-EQ-J23-2|Q5aii': ['Here is a number machine.<br>When the output is 29.3, what was the input?', FG.machine(['× 4', '+ 1.7'], '?', '29.3')],
+    'F-EQ-J23-2|Q8a': ['Here are six numbered cards.<br>What is the median of the numbers on the cards?', FG.cards([14, 28, 11, 25, 19, 22])],
+    'F-EQ-J23-2|Q18a': ['The base of a filing cabinet is a rectangle 40 cm by 50 cm. The cabinet exerts a force of 560 N on the floor.<br>Pressure = Force ÷ Area. Find the pressure in N/cm².', FG.cuboid('50 cm', '40 cm', '')],
+    'H-EQ-J23-2|Q1a': ['The base of a filing cabinet is a rectangle 40 cm by 50 cm. The cabinet exerts a force of 560 N on the floor.<br>Pressure = Force ÷ Area. Find the pressure in N/cm².', FG.cuboid('50 cm', '40 cm', '')],
+    'F-EQ-J23-2|Q20a': ['The diagram shows a circle inside a square of side 10 cm. The sides of the square touch the circle.<br>Find the area of the shaded region.<br><small>2 decimal places.</small>', FG.circleInSquare('10 cm')],
+    'F-EQ-J23-2|Q20b': ['The cross-section of this prism is a parallelogram. The prism is 20 cm long.<br>Find the volume of the prism.', FG.paraPrism({ base: '12 cm', h: '6.5 cm', len: '20 cm' })],
+    'H-EQ-J23-2|Q4b': ['The cross-section of this prism is a parallelogram. The prism is 20 cm long.<br>Find the volume of the prism.', FG.paraPrism({ base: '12 cm', h: '6.5 cm', len: '20 cm' })],
+    'F-EQ-J23-2|Q22': ['A plane is coming in to land. It is flying at 3° to the horizontal and is 3.2 km horizontally from the start of the runway.<br>Calculate its height h above the ground in metres.<br><small>1 decimal place.</small>', FG.rightTri({ left: 'h', bottom: '3.2 km', a: { 2: '3°' }, w: 7, h: 1.6 })],
+    'F-EQ-J22-1|Q16b': ['A ship sails from P to Q, then from Q to R.<br>Find the bearing of R from P.', FG.twoLegs(80, 140, '8 km', '8 km')],
+    'F-EQ-J22-1|Q21a': ['Here is a cone.<br>Volume of a cone = ⅓πr²h. Its volume is kπ cm³. Find k.', FG.cone('6 cm', '10 cm')],
+    'F-EQ-J22-1|Q23c': ['The tree diagram shows the probabilities that Kathy cycles to work on Monday and Tuesday.<br>Find the probability that she does not cycle on either day.', FG.tree([{ l: 'Cycles', p: '0.7' }, { l: 'Does not', p: '?' }], [[{ l: 'Cycles', p: '?' }, { l: 'Does not', p: '?' }], [{ l: 'Cycles', p: '?' }, { l: 'Does not', p: '0.2' }]], { h1: 'Monday', h2: 'Tuesday' })],
+    'F-EQ-J22-2|Q8a': ['The diagram shows the floor of a classroom. Carpet costs £13.20 per m².<br>How much does it cost to carpet the whole floor?', rects([{ w: 7.5, h: 6.2, k: 24, top: '7.5 m', side: '6.2 m' }])],
+    'F-EQ-J22-2|Q17': ['Amy eats ⅓ of a pizza of radius 6 inches. Vance eats ¼ of a pizza of radius 7 inches.<br>Who eats the larger area of pizza?', FG.pizzas({ f: 1 / 3, l: 'Amy: radius 6 in' }, { f: 1 / 4, l: 'Vance: radius 7 in' })],
+    'F-EQ-J22-2|Q18': ['The table shows the masses of 90 carrots. Calculate an estimate of the mean mass.<br><small>2 decimal places.</small>', FG.freq('Mass, m (grams)', [['30 < m ≤ 60', 10], ['60 < m ≤ 90', 30], ['90 < m ≤ 120', 35], ['120 < m ≤ 150', 12], ['150 < m ≤ 180', 3]])],
+    'H-EQ-J22-2|Q1': ['The table shows the masses of 90 carrots. Calculate an estimate of the mean mass.<br><small>2 decimal places.</small>', FG.freq('Mass, m (grams)', [['30 < m ≤ 60', 10], ['60 < m ≤ 90', 30], ['90 < m ≤ 120', 35], ['120 < m ≤ 150', 12], ['150 < m ≤ 180', 3]])],
+    'F-EQ-N21-1|Q9aii': ['Here is a number machine.<br>The input is 3x. Write an expression for the output.', FG.machine(['× 5', '− 2'], '3x', '?')],
+    'F-EQ-N21-2|Q12biii': ['The table shows the number of raspberries in 100 boxes.<br>Calculate the mean number of raspberries in a box.', FG.tbl(['Number of raspberries', 'Number of boxes'], [[30, 5], [31, 18], [32, 27], [33, 30], [34, 15], [35, 5]])],
+    'F-EQ-N21-2|Q21a': ['The side view of a ramp is a right-angled triangle. It rises 0.4 m over a horizontal distance of 5 m.<br>Find the angle of rise, x.<br><small>2 decimal places.</small>', FG.rightTri({ left: '0.4 m', bottom: '5 m', a: { 2: 'x' }, w: 7, h: 1.4 })],
+    'F-EQ-J19-1|Q8b': ['The table shows information about a 500 ml bottle of sports drink.<br>Tori drinks 4 full bottles. How many millilitres does she drink, and how much salt does this contain?', FG.tbl(['Nutrition', 'per 100 ml'], [['Energy (kcal)', '28'], ['Carbohydrate (g)', '6.25'], ['Salt (g)', '0.3']])],
+    'F-EQ-J19-2|Q6c': ['The chart shows the distances, in miles, between some cities.<br>How much further is it to drive from London to York via Birmingham than to drive directly?', FG.across([['', 'London', 'Birmingham'], ['Birmingham', '121', '—'], ['York', '211', '133']])],
+    'F-EQ-J19-2|Q8d': ['A spinner can land on purple, red, blue, orange or yellow. Red, blue and orange are equally likely.<br>Find the probability that it lands on red.', FG.across([['Colour', 'Purple', 'Red', 'Blue', 'Orange', 'Yellow'], ['Probability', '0.37', '', '', '', '0.18']])],
+    'F-EQ-J19-2|Q16': ['The rectangle below is enlarged by scale factor 2.5.<br>Find the width of the enlarged rectangle.', rects([{ w: 15, h: 4.8, k: 14, top: '15 cm', side: 'width', name: 'Area = 72 cm²' }])],
+
+    'H-EQ-J25-1|Q1': ['A quarter of a circle has been cut from a rectangular card.<br>Find the perimeter of the remaining card in the form aπ + b.', FG.quarterCut('18 cm', '6 cm', 'r = 6 cm')],
+    'H-EQ-J25-1|Q4': ['The diagram shows a triangular prism. Its cross-section is a right-angled triangle.<br>Find the total surface area.', FG.triPrism({ left: '5 cm', hyp: '13 cm', len: '9 cm' })],
+    'H-EQ-J25-2|Q3': ['A square of side 10 cm has each corner on the circle.<br>Find the area of the circle.<br><small>1 decimal place.</small>', FG.squareInCircle('10 cm')],
+    'H-EQ-J25-2|Q4b': ['Bag A has 3 red and 2 blue counters. In Bag B there are twice as many red counters as blue.<br>One counter is chosen from each bag. Find P(at least one blue).', FG.tree([{ l: 'Red', p: '3/5' }, { l: 'Blue', p: '2/5' }], [{ l: 'Red', p: '?' }, { l: 'Blue', p: '?' }], { h1: 'Bag A', h2: 'Bag B' })],
+    'H-EQ-J25-2|Q6a': ['Here is a right-angled triangle.<br>Calculate the length x.<br><small>1 decimal place.</small>', FG.rightTri({ left: 'x', hyp: '15 cm', a: { 2: '38°' } })],
+    'H-EQ-J25-2|Q6b': ['Here is a right-angled triangle.<br>Calculate the size of angle E.<br><small>1 decimal place.</small>', FG.rightTri({ bottom: '16 cm', hyp: '20 cm', a: { 2: 'E' } })],
+    'H-EQ-J25-2|Q10': ['ABC is a triangle. DE is parallel to AC and AD : DB = 4 : 3.<br>Calculate the length of DE.', FG.poly([[0, 7], [3.5, 0], [8, 7]], { v: ['A', 'B', 'C'], s: { 2: '28 cm' }, size: 220, extra: P => { const D = [P[1][0] + (P[0][0] - P[1][0]) * 3 / 7, P[1][1] + (P[0][1] - P[1][1]) * 3 / 7], E = [P[1][0] + (P[2][0] - P[1][0]) * 3 / 7, P[1][1] + (P[2][1] - P[1][1]) * 3 / 7]; return ln(D, E) + tx(D[0] - 14, D[1] + 4, 'D') + tx(E[0] + 14, E[1] + 4, 'E'); } })],
+    'H-EQ-J25-2|Q13': ['A solid hemisphere of radius 10 cm is cut into 10 identical wedges (like orange segments).<br>Find the total surface area of one wedge. <small>1 decimal place.</small>', FG.hemisphere('10 cm')],
+    'H-EQ-J25-2|Q20': ['A small square-based pyramid is cut from the top of a large pyramid. The pyramids are similar.<br>What percentage of the large pyramid\'s volume is removed?', FG.pyramid('50 cm', '', { cut: 0.3, cutLab: '15 cm' })],
+    'H-EQ-J24-1|Q18a': ['Here is a cylinder.<br>Its total surface area is kπ cm². Find k.', FG.cylinder('10 cm', '8 cm')],
+    'H-EQ-J24-1|Q18b': ['A cylinder of cheese has height 24 cm. A wedge is cut from it with angle 40° at the centre and depth 10 cm.<br>What fraction of the whole cheese is the wedge?', FG.cylinder('', '24 cm', { wedge: 1 })],
+    'H-EQ-J24-2|Q3': ['ABC is right-angled at B and BCD is right-angled at C.<br>Find the area of triangle BCD.', FG.poly([[0, 0], [8, 6], [8, 11], [0, 6]], { v: ['A', 'C', 'D', 'B'], s: { 0: '10 cm', 1: '5 cm', 3: '6 cm' }, size: 200, extra: P => ln(P[3], P[1]) + ra(P[3], P[0], P[1]) + ra(P[1], P[3], P[2]) })],
+    'H-EQ-J24-2|Q11': ['Pressure = Force ÷ Area. A cylindrical tank stands on the ground. Its base has radius 20 cm. It exerts a pressure of 0.85 N/cm².<br>Find the force on the ground. <small>1 decimal place.</small>', FG.cylinder('20 cm', '')],
+    'H-EQ-J24-2|Q12': ['A cliff is 40 m high. From point P, the angle of elevation of the top of the cliff is 78°.<br>It is not safe to stand within 10 m of the base of the cliff. Is P a safe distance away?', FG.cliff('40 m', '78°')],
+    'H-EQ-J24-2|Q15': ['A solid cone has radius y cm and height 9y cm. It is made from material of density 5 g/cm³.<br>Volume of a cone = ⅓πr²h. Write an expression for its mass.', FG.cone('y cm', '9y cm')],
+    'H-EQ-J23-1|Q15': ['A tank is a cuboid with a square base of side 25 cm. More liquid is added: the mass of liquid is now 7500 g, the depth has increased by 25% and the density is 0.8 g/cm³.<br>Find the original depth.', FG.cuboid('25 cm', '25 cm', 'depth')],
+    'H-EQ-J23-2|Q9bii': ['For a loaf of bread, P(fault with the bread) = 0.03 and P(fault with the packaging) = 0.02. The two are independent.<br>Find the probability of exactly one fault.', FG.tree([{ l: 'Fault', p: '0.03' }, { l: 'No fault', p: '?' }], [{ l: 'Fault', p: '0.02' }, { l: 'No fault', p: '?' }], { h1: 'Bread', h2: 'Packaging' })],
+    'H-EQ-J22-1|Q17': ['The diagram shows an equilateral triangle with sides 2x cm and height h cm.<br>Find h in terms of x.', FG.poly([[0, 8.66], [10, 8.66], [5, 0]], { s: { 0: '2x', 1: '2x', 2: '2x' }, size: 200, extra: P => ln(P[2], [(P[0][0] + P[1][0]) / 2, P[0][1]], 1) + tx(P[2][0] + 12, (P[2][1] + P[0][1]) / 2 + 10, 'h', 1) })],
+    'H-EQ-J22-2|Q7': ['Here is a right-angled triangle ABC.<br>Calculate its area. <small>2 decimal places.</small>', FG.poly([[0, 0], [0, 5], [6, 5]], { v: ['C', 'B', 'A'], s: { 1: '6 cm' }, a: { 2: '50°' }, r: [1], size: 200 })],
+    'H-EQ-J22-2|Q8': ['A wedge is cut from a cylinder of cheese with radius 6 cm and height 8 cm. The wedge has volume 120 cm³.<br>What percentage of the cheese is the wedge? <small>2 decimal places.</small>', FG.cylinder('6 cm', '8 cm', { wedge: 1 })],
+    'H-EQ-N21-1|Q5': ['A running club has 120 members. Each runs sprint, middle distance or long distance. There are 4 more junior sprinters than senior sprinters.<br>Use the table to find the probability that a member chosen at random is a junior middle-distance runner.', FG.tbl(['', 'Sprinter', 'Middle distance', 'Long distance', 'Total'], [['Senior', '', '20', '', '70'], ['Junior', '', '', '6', ''], ['Total', '', '', '40', '120']], { rowHead: true })],
+    'H-EQ-N21-1|Q12a': ['The diagram shows a sector of a circle, centre O, radius r cm. The arc length is πr/4 cm.<br>Work out the angle x.', FG.sector('x', 'r cm', { deg: 45, arc: 'πr/4' })],
+    'H-EQ-N21-2|Q8a': ['The table shows the times taken by 600 people to travel to a show.<br>Calculate an estimate of the mean time.', FG.freq('Time, t (minutes)', [['20 < t ≤ 40', 50], ['40 < t ≤ 80', 150], ['80 < t ≤ 100', 280], ['100 < t ≤ 150', 120]])],
+    'H-EQ-N21-2|Q13b': ['A box has 10 buttons: 4 white (W) and 6 blue (B). Rita takes 2 at random without replacement.<br>Find the probability that at least one is white.', FG.tree([{ l: 'W', p: '4/10' }, { l: 'B', p: '6/10' }], [{ l: 'W', p: '?' }, { l: 'B', p: '?' }], { h1: '1st button', h2: '2nd button' })],
+    'H-EQ-N21-2|Q15a': ['A candle is made by removing a small pyramid from the top of a large square-based pyramid (base 10 cm, height 30 cm). The small pyramid has base 2 cm. Wax density = 0.8 g/cm³. Volume of a pyramid = ⅓ × base area × height.<br>Find the mass of the candle.', FG.pyramid('10 cm', '30 cm', { cut: 0.2, cutLab: '2 cm' })],
+    'H-EQ-J19-1|Q10c': ['The tree diagram shows the probabilities of Sam oversleeping and missing the bus.<br>Calculate the probability that Sam catches the bus.', FG.tree([{ l: 'Oversleeps', p: '0.3' }, { l: 'Does not', p: '?' }], [[{ l: 'Misses', p: '0.7' }, { l: 'Catches', p: '?' }], [{ l: 'Misses', p: '0.2' }, { l: 'Catches', p: '?' }]], { h1: 'Oversleeps?', h2: 'Bus' })],
+    'H-EQ-J19-2|Q2ai': ['The table shows the depth of a lens in 100 pairs of glasses.<br>Calculate an estimate of the mean depth.', FG.freq('Depth, x mm', [['10 ≤ x < 20', 8], ['20 ≤ x < 30', 22], ['30 ≤ x < 40', 30], ['40 ≤ x < 50', 40]])],
+    'H-EQ-J19-2|Q3': ['Here is a right-angled triangle.<br>Calculate the size of angle f.<br><small>1 decimal place.</small>', FG.rightTri({ left: '7.5 cm', hyp: '11.2 cm', a: { 2: 'f' } })],
+    'H-EQ-J19-2|Q7a': ['A sphere of radius 3.1 cm has the same volume as a cuboid with base area 15.6 cm².<br>Volume of a sphere = ⁴⁄₃πr³. Find the height of the cuboid. <small>1 decimal place.</small>', FG.sphere('3.1 cm')],
+    'H-EQ-J19-2|Q7b': ['A circle has circumference 100 cm. It is cut into two semicircles.<br>Find the perimeter of one semicircle <small>(nearest cm)</small>.', FG.semicircle('')],
+  };
+
+  let applied = 0, missing = [];
+  ['F', 'H'].forEach(t => DIAG[t].forEach(v => v.items.forEach(it => { const f = F[v.id + '|' + it.src]; if (f) { if (f[0]) it.q = f[0]; it.fig = f[1]; applied++; } })));
+  Object.keys(F).forEach(k => { const [id, src] = k.split('|'); const v = DIAG.F.concat(DIAG.H).find(x => x.id === id); if (!v || !v.items.some(i => i.src === src)) missing.push(k); });
+  if (typeof window !== 'undefined') window.__FIGS = { applied, missing };
+  else globalThis.__FIGS = { applied, missing };
+})();
 </script>
 <script>/* =========================================================
    GCSE MATHS QUEST — APP
@@ -3397,7 +3908,7 @@ function diagRes() {
   const rep = (S.diags || [])[vp.i]; if (!rep) return home();
   const { v, target, priority, strong, advice } = diagReport(rep);
   const bars = Object.entries(rep.strands).filter(([, x]) => x.tot).map(([k, x]) => { const p = Math.round(x.got / x.tot * 100); return `<div class="rowline" style="display:block"><div class="row between"><b>${k}</b><span class="small">${x.got}/${x.tot} · ${p}%</span></div><span class="bar thin"><i style="width:${p}%;background:${p >= 70 ? 'var(--ok)' : p >= 40 ? 'var(--amber)' : 'var(--bad)'}"></i></span></div>`; }).join('');
-  const review = v.items.map((it, i) => { const q = diagQ(it), r = rep.items[i]; return `<details class="acc2"><summary><b>${i + 1}.</b> ${r.got === it.m ? ic('check', 16) : ic('x', 16)} ${TOPIC(it.t).name} · ${r.got}/${it.m} <span class="small mut">(${v.model.split('·')[1].trim()} ${it.src})</span></summary><div style="margin-top:8px">${it.q}</div><p class="small">Answer given: <b>${r.a == null || r.a === '' ? 'none' : esc(r.a)}</b> · Correct: <b>${answerHTML(q)}</b></p><p class="small mut">${it.w || ''}</p></details>`; }).join('');
+  const review = v.items.map((it, i) => { const q = diagQ(it), r = rep.items[i]; return `<details class="acc2"><summary><b>${i + 1}.</b> ${r.got === it.m ? ic('check', 16) : ic('x', 16)} ${TOPIC(it.t).name} · ${r.got}/${it.m} <span class="small mut">(${v.model.split('·')[1].trim()} ${it.src})</span></summary><div style="margin-top:8px">${q.text}</div>${q.svg || ''}<p class="small">Answer given: <b>${r.a == null || r.a === '' ? 'none' : esc(r.a)}</b> · Correct: <b>${answerHTML(q)}</b></p><p class="small mut">${it.w || ''}</p></details>`; }).join('');
   return `${header()}<main class="wrapx">${backBtn('nav', 'progress', 'Progress')}
   <h1 class="pageh">Diagnostic report</h1><p class="mut">${rep.name ? `<b>${esc(rep.name)}</b> · ` : ''}${TIERS[rep.tier].name} ${v.name} (mirrors ${v.model}) · ${rep.date} · time used ${fmtTime(rep.secs)} of ${diagMinutes(v)} min</p>
   <article class="card"><div class="grid3 statrow"><div><div class="big">${rep.grade < 1 ? 'U' : rep.grade}</div><div class="small mut">Working at</div></div><div><div class="big">${target}</div><div class="small mut">Target grade</div></div><div><div class="big">${rep.score}/${rep.total}</div><div class="small mut">${rep.pct}% of marks</div></div></div>
