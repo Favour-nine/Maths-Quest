@@ -217,6 +217,27 @@ body.dark .callout.ok{background:#173b22}body.dark .callout.extra{background:#3b
 .figrow{display:flex;gap:8px;justify-content:center;align-items:flex-end;flex-wrap:wrap}.figrow .qsvg{max-width:46%;margin:4px 0}
 .qsvg.fig{max-width:380px}
 .qtbl td,.qtbl th{white-space:nowrap}
+
+.lockwarn{position:fixed;inset:0;z-index:9999;background:rgba(20,10,60,.72);display:flex;align-items:center;justify-content:center;padding:18px}
+body.examlock .nav,body.examlock .strip{display:none!important}
+body.examlock{-webkit-user-select:none;user-select:none}body.examlock input{-webkit-user-select:text;user-select:text}
+.ppsrc{display:inline-flex;align-items:center;gap:6px;font-size:.82rem;font-weight:700;color:var(--brand);background:var(--infobg);border:1.5px solid var(--line);border-radius:999px;padding:3px 10px;margin-bottom:10px}
+body.dark .ppsrc{color:#fff}
+.bankimg{display:block;width:100%;max-width:720px;height:auto;margin:6px 0 4px;border:2px solid var(--line);border-radius:10px;background:#fff}
+.field{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.field input,.field select,.field textarea{font:inherit;font-size:1rem;color:var(--ink);background:var(--surface);border:2px solid var(--line);border-radius:10px;padding:10px 12px;min-height:44px;width:100%;box-sizing:border-box}
+.field textarea{resize:vertical}
+.dropz{display:flex;align-items:center;justify-content:center;text-align:center;min-height:120px;border:2.5px dashed var(--line);border-radius:12px;padding:12px;cursor:pointer;background:var(--surface);color:var(--mut);font-weight:600}
+.dropz img{max-width:100%;max-height:340px;border-radius:8px}
+.bankrow{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1.5px solid var(--line)}
+.bankrow:first-of-type{border-top:0}
+.bankrow img{width:84px;height:60px;object-fit:cover;object-position:top left;border:1.5px solid var(--line);border-radius:6px;background:#fff;flex:none}
+[hidden]{display:none!important}
+.bankimg{cursor:zoom-in}
+.zoomov{position:fixed;inset:0;z-index:200;background:rgba(10,8,30,.85);display:flex;flex-direction:column;padding:12px;gap:10px}
+.zoomov>button{align-self:flex-end}
+.zoomsc{flex:1;overflow:auto;background:#fff;border-radius:10px;-webkit-overflow-scrolling:touch}
+.zoomsc img{display:block;width:max(100%,640px);height:auto}
 </style>
 </head>
 <body>
@@ -4784,6 +4805,123 @@ extraCard = function (rep) {
 };
 </script>
 <script>/* =========================================================
+   EXAM MODE for diagnostic tests
+   - goes full screen when a test starts (where the device allows)
+   - locks the rest of the game until the paper is handed in
+   - records every time the learner leaves the test screen,
+     and shows it on the report and in the teacher's sheet
+   ========================================================= */
+const LOCK_ALLOW = new Set(['mc', 'key', 'enext', 'eprev', 'ejump', 'esubmit', 'fsfinA', 'fsback', 'fsgoB', 'fsxA', 'fsxB', 'dhandin', 'dextra', 'lockfs', 'size']);
+const fsSupported = () => !!(document.documentElement.requestFullscreen || document.documentElement.webkitRequestFullscreen);
+const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+const goFull = () => { const el = document.documentElement; try { const p = (el.requestFullscreen || el.webkitRequestFullscreen).call(el, { navigationUI: 'hide' }); if (p && p.catch) p.catch(() => { }); } catch (e) { } };
+const exitFull = () => { try { if (isFull()) (document.exitFullscreen || document.webkitExitFullscreen).call(document); } catch (e) { } };
+const testLocked = () => !!(sess && sess.cfg && sess.cfg.diag && !sess.done && sess.lock);
+const elapsed = () => Math.round((Date.now() - sess.lock.t0) / 1000);
+
+function lockEvent(kind) { const L = sess.lock; L.events.push({ kind, at: elapsed() }); }
+function leaveStart(kind) { const L = sess.lock; if (L.awayFrom) return; L.awayFrom = Date.now(); L.awayKind = kind; L.left++; lockEvent(kind); }
+function leaveEnd() { const L = sess.lock; if (!L.awayFrom) return; const s = Math.round((Date.now() - L.awayFrom) / 1000); L.away += s; L.events[L.events.length - 1].secs = s; L.awayFrom = null; showLockWarn(); }
+
+/* ---- start: full screen + lock ---- */
+const _startL = start;
+start = function (cfg) {
+  const want = !!cfg.diag;
+  if (want && fsSupported()) goFull();   // must happen inside the click that started the test
+  _startL(cfg);
+  if (!want || !sess || !sess.cfg.diag) return;
+  sess.lock = { t0: Date.now(), events: [], left: 0, away: 0, fsExits: 0, awayFrom: null, fsOk: fsSupported() };
+  try { history.pushState({ mqTest: 1 }, ''); } catch (e) { }
+  document.body.classList.add('examlock');
+  setTimeout(() => { if (testLocked() && !isFull()) sess.lock.fsOk = false; }, 1500);
+  render();
+  if (!fsSupported()) toast('', 'This device cannot go full screen. Leaving the test is still recorded for your teacher.');
+};
+
+/* ---- block everything except answering and moving between questions ---- */
+document.addEventListener('click', e => {
+  if (!testLocked()) return;
+  const el = e.target.closest('[data-act]'); if (!el) return;
+  if (!LOCK_ALLOW.has(el.dataset.act)) { e.preventDefault(); e.stopImmediatePropagation(); toast('', 'The test is locked. Hand in your paper to use the rest of the game.'); }
+}, true);
+document.addEventListener('keydown', e => {
+  if (!testLocked()) return;
+  if (e.key === 'Escape') { e.stopImmediatePropagation(); }
+  if ((e.ctrlKey || e.metaKey) && /^[rpfsuo]$/i.test(e.key)) { e.preventDefault(); e.stopImmediatePropagation(); }
+  if (e.key === 'F5') { e.preventDefault(); e.stopImmediatePropagation(); }
+}, true);
+document.addEventListener('contextmenu', e => { if (testLocked()) e.preventDefault(); });
+window.addEventListener('popstate', () => { if (testLocked()) { try { history.pushState({ mqTest: 1 }, ''); } catch (e) { } toast('', 'Finish and hand in the test first.'); } });
+window.addEventListener('beforeunload', e => { if (testLocked()) { e.preventDefault(); e.returnValue = ''; } });
+
+/* ---- record leaving ---- */
+document.addEventListener('visibilitychange', () => { if (!testLocked()) return; document.hidden ? leaveStart('Left the test (another tab or app)') : leaveEnd(); });
+window.addEventListener('blur', () => { if (!testLocked()) return; setTimeout(() => { if (testLocked() && !document.hasFocus() && !document.hidden) leaveStart('Switched to another window'); }, 400); });
+window.addEventListener('focus', () => { if (testLocked()) leaveEnd(); });
+const onFs = () => { if (!testLocked()) return; if (!isFull() && sess.lock.fsOk) { sess.lock.fsExits++; lockEvent('Left full screen'); showLockWarn(); } };
+document.addEventListener('fullscreenchange', onFs); document.addEventListener('webkitfullscreenchange', onFs);
+
+function showLockWarn() {
+  if (!testLocked()) return;
+  const old = document.getElementById('lockwarn'); if (old) old.remove();
+  const L = sess.lock, d = document.createElement('div'); d.id = 'lockwarn'; d.className = 'lockwarn'; d.setAttribute('role', 'alertdialog'); d.setAttribute('aria-modal', 'true');
+  d.innerHTML = `<div class="card focus" style="max-width:460px;text-align:center"><div class="kicker">Test in progress</div><h2 style="margin:6px 0">${isFull() || !L.fsOk ? 'You left the test screen' : 'Full screen is off'}</h2>
+    <p>This has been recorded for your teacher${L.left ? ` (left ${L.left} time${L.left > 1 ? 's' : ''} so far)` : ''}. The timer kept running.</p>
+    <button class="btn full" data-act="lockfs">${ic('check', 18)} Back to the test${L.fsOk && !isFull() ? ' in full screen' : ''}</button></div>`;
+  document.body.appendChild(d); const b = d.querySelector('button'); if (b) b.focus();
+}
+ACT.lockfs = () => { const w = document.getElementById('lockwarn'); if (w) w.remove(); if (testLocked() && sess.lock.fsOk && !isFull()) goFull(); };
+
+/* ---- the X button: show a lock instead ---- */
+const _playL = play;
+play = function () {
+  let html = _playL();
+  if (testLocked()) html = html.replace(/<button class="x" data-act="quit" aria-label="Quit">[\s\S]*?<\/button>/, `<button class="x" data-act="lockinfo" aria-label="Test is locked" title="Test is locked">${ic('target', 20)}</button>`);
+  return html;
+};
+ACT.lockinfo = () => toast('', 'The test is locked until you hand in your paper.');
+LOCK_ALLOW.add('lockinfo');
+
+/* ---- hand in: unlock, leave full screen, save the record ---- */
+const _submitL = submitExam;
+submitExam = function () {
+  const L = sess && sess.lock, wasDiag = !!(sess && sess.cfg.diag && !sess.done);
+  if (L && L.awayFrom) leaveEnd();
+  _submitL();
+  if (!wasDiag || !L) return;
+  const rep = S.diags[S.diags.length - 1];
+  rep.integrity = { left: L.left, away: L.away, fsExits: L.fsExits, fs: L.fsOk, events: L.events.slice(0, 40) };
+  save(); sess.lock = null;
+  const w = document.getElementById('lockwarn'); if (w) w.remove();
+  document.body.classList.remove('examlock'); exitFull(); render();
+};
+
+/* ---- report + sheet ---- */
+function integrityCard(rep) {
+  const g = rep.integrity; if (!g) return '';
+  const clean = !g.left && !g.fsExits;
+  const list = g.events.length ? `<div class="tablewrap"><table class="logt"><thead><tr><th>Time into test</th><th>What happened</th><th>Away for</th></tr></thead><tbody>${g.events.map(e => `<tr><td>${clock(e.at)}</td><td>${e.kind}</td><td>${e.secs != null ? fmtTime(e.secs) : '—'}</td></tr>`).join('')}</tbody></table></div>` : '';
+  return `<article class="card"><h2>Test conditions</h2>${clean ? `<div class="callout ok">${ic('check', 18)}<div><b>Stayed on the test screen the whole time.</b>${g.fs ? ' Full screen was on.' : ' (This device could not use full screen.)'}</div></div>` : `<div class="callout">${ic('x', 18)}<div><b>Left the test screen ${g.left} time${g.left === 1 ? '' : 's'}</b>${g.left ? ` — ${fmtTime(g.away)} away in total` : ''}${g.fsExits ? `. Left full screen ${g.fsExits} time${g.fsExits === 1 ? '' : 's'}.` : '.'}</div></div>${list}`}</article>`;
+}
+const _diagResL = diagRes;
+diagRes = function () {
+  const rep = (S.diags || [])[vp.i]; let h = _diagResL();
+  if (rep && rep.integrity) h = h.replace(/(<article class="card"><h2>By area of)/, integrityCard(rep) + '$1');
+  return h;
+};
+const _diagTextL = diagText;
+diagText = function (rep) {
+  let t = _diagTextL(rep); const g = rep.integrity;
+  if (g) t += `\n\nTest conditions: ${!g.left && !g.fsExits ? 'stayed on the test screen the whole time' : `left the test screen ${g.left} time(s), ${fmtTime(g.away)} away in total; left full screen ${g.fsExits} time(s)`}.`;
+  return t;
+};
+const _payloadL = diagPayload;
+diagPayload = function (rep) {
+  const p = _payloadL(rep), g = rep.integrity;
+  return Object.assign(p, { timesLeft: g ? g.left : '', timeAway: g ? fmtTime(g.away) : '', fullScreenExits: g ? g.fsExits : '', conditions: g ? (!g.left && !g.fsExits ? 'Stayed on test' : 'Left the test screen') : '' });
+};
+</script>
+<script>/* =========================================================
    LESSON PLAYER — learn first, then practise
    ========================================================= */
 let les = null;
@@ -4837,6 +4975,317 @@ document.addEventListener('keydown', e => {
 });
 
 render();
+</script>
+<script>/* =========================================================
+   PRACTICE UPGRADES
+   - Quick Practice: choose 5 or 10 questions
+   - Every round uses different question types (no repeats in a round,
+     and it steers away from the types used last round)
+   - Exam-style practice: questions modelled on real AQA / Eduqas papers
+   - Teacher question bank: screenshots of real past-paper questions,
+     shared with students through a questions.json pack
+   ========================================================= */
+if (S.qlen !== 10) S.qlen = 5;
+S.lastTopics = S.lastTopics || []; S.lastV = S.lastV || []; S.ppSeen = S.ppSeen || [];
+try { Object.defineProperty(MODES.find(m => m.id === 'quick'), 'd', { get: () => `${S.qlen} questions, all different`, configurable: true }); } catch (e) { }
+let pxRound = { topics: [], v: [], pp: [] };
+
+/* ---------- teacher bank storage ---------- */
+const BANK_KEY = 'mq-bank';
+let BANK = (() => { try { return JSON.parse(localStorage.getItem(BANK_KEY)) || []; } catch (e) { return []; } })();
+let BANK_SHARED = [];
+function saveBank() { try { localStorage.setItem(BANK_KEY, JSON.stringify(BANK)); return true; } catch (e) { toast('⚠️', 'This device is out of space for more pictures. Download the pack, then delete some questions here.'); return false; } }
+function allBank() { const ids = new Set(BANK.map(b => b.id)); return [...BANK, ...BANK_SHARED.filter(b => !ids.has(b.id))]; }
+function bankOk(b) { return b && b.id && b.img && b.t && TOPIC(b.t) && ['num', 'mc', 'text', 'self'].includes(b.type); }
+/* A questions.json file uploaded next to index.html is loaded for everyone */
+(function loadShared() {
+  if (!/^https?:/.test(location.protocol)) return;
+  fetch('questions.json', { cache: 'no-cache' }).then(r => r.ok ? r.json() : null).then(d => {
+    const items = d && Array.isArray(d.items) ? d.items.filter(bankOk) : [];
+    if (items.length) { BANK_SHARED = items; pxCache = {}; if (view === 'pick' || view === 'bank') render(); }
+  }).catch(() => { });
+})();
+
+/* ---------- the exam-style pool ---------- */
+let pxCache = {};
+function ppPool(tier) {
+  if (pxCache[tier]) return pxCache[tier];
+  const out = [];
+  const tiers = tier === 'F' ? ['F'] : tier === 'H' ? ['H'] : ['F', 'H'];
+  tiers.forEach(tr => DIAG[tr].forEach(v => v.items.forEach(it => {
+    if (!TOPIC(it.t)) return;
+    const label = `${v.name} ${tr === 'F' ? 'Foundation' : 'Higher'} · Q${String(it.src).replace(/^Q/, '')}`;
+    out.push({ key: v.id + '|' + it.src, t: it.t, label, make: () => ppFromItem(it, label, v.id + '|' + it.src) });
+  })));
+  allBank().forEach(b => {
+    if (tier === 'F' && b.tier === 'H') return; if (tier === 'H' && b.tier === 'F') return;
+    out.push({ key: 'bank|' + b.id, t: b.t, bank: true, label: b.src || 'Past paper', make: () => bankQ(b) });
+  });
+  return (pxCache[tier] = out);
+}
+function ppFromItem(it, label, key) {
+  const q = diagQ(it), t = TOPIC(q.topic);
+  q.pp = true; q.key = key; q.hint = (t.learn || [])[0] || 'Read the question twice and underline what it asks for.';
+  q.text = `<div class="ppsrc">${ic('file', 14)} Exam-style · modelled on ${label} · ${q.marks} mark${q.marks > 1 ? 's' : ''}</div>${q.text}`;
+  return q;
+}
+function bankQ(b) {
+  const t = TOPIC(b.t), g = Math.max(1, Math.min(9, +b.g || 4));
+  const q = {
+    g, topic: t.id, topicName: t.name, cat: t.cat, tierLabel: tierLabel(g), marks: +b.marks || 1, mis: [], traps: [], pp: true, bank: true, key: 'bank|' + b.id,
+    hint: (t.learn || [])[0] || 'Read the question twice.',
+    text: `<div class="ppsrc">${ic('file', 14)} Real past-paper question${b.src ? ' · ' + esc(b.src) : ''} · ${+b.marks || 1} mark${(+b.marks || 1) > 1 ? 's' : ''}</div>${b.prompt ? `<p>${esc(b.prompt)}</p>` : ''}<img class="bankimg" src="${b.img}" alt="Past-paper question${b.src ? ' ' + esc(b.src) : ''}" title="Tap to zoom"><div class="small mut">Tap the question to make it bigger.</div>`,
+    steps: [b.ms ? esc(b.ms).replace(/\n/g, '<br>') : 'Compare with the mark scheme.'],
+  };
+  const alts = String(b.ans || '').split('|').map(s => s.trim()).filter(Boolean);
+  if (b.type === 'mc') {
+    const opts = String(b.opts || '').split('|').map(s => s.trim()).filter(Boolean);
+    q.kind = 'mc'; q.options = opts.map((o, i) => ({ t: esc(o), ok: i === (+b.correct || 0), why: 'Check the worked answer below.' }));
+    if (!q.options.some(o => o.ok) && q.options[0]) q.options[0].ok = true;
+  } else if (b.type === 'num') { q.kind = 'num'; q.alts = alts.map(parseValue).filter(v => v != null); q.answer = q.alts[0]; q.ansTxt = esc(alts[0] || ''); if (b.tol) q.tol = Math.abs(+b.tol); }
+  else if (b.type === 'text') { q.kind = 'text'; q.alts = alts; q.anyOrder = !!b.anyOrder; q.ansTxt = esc(alts[0] || ''); }
+  else { q.kind = 'self'; q.ansTxt = esc(alts[0] || ''); }
+  return q;
+}
+function ppScoped(c) {
+  let all = ppPool(c.tier);
+  if (c.pp === 'real') all = all.filter(o => o.bank);
+  if (c.cat && c.cat !== 'all') { const f = all.filter(o => TOPIC(o.t).cat === c.cat); if (f.length) all = f; }
+  return all;
+}
+function ppPick(c) {
+  const all = ppScoped(c); if (!all.length) return null;
+  let pool = all.filter(o => !pxRound.pp.includes(o.key) && !pxRound.topics.includes(o.t));
+  if (!pool.length) pool = all.filter(o => !pxRound.pp.includes(o.key));
+  if (!pool.length) { pxRound.pp = []; pool = all; }
+  const fresh = pool.filter(o => !S.ppSeen.includes(o.key)); if (fresh.length) pool = fresh;
+  const notLast = pool.filter(o => !S.lastTopics.includes(o.t)); if (notLast.length) pool = notLast;
+  const bank = pool.filter(o => o.bank); if (bank.length && c.pp !== 'real' && Math.random() < 0.5) pool = bank;
+  const o = P(pool);
+  pxRound.pp.push(o.key); pxRound.topics.push(o.t);
+  S.ppSeen = [...S.ppSeen.filter(k => k !== o.key), o.key].slice(-400);
+  return o.make();
+}
+
+/* ---------- a different question type each time ---------- */
+function pxVariantQ(topic, lvl) {
+  const T = TIERS[sess.cfg.tier], id = topic.id;
+  let pool = topic.v.map((v, i) => ({ v, i })).filter(o => o.v.g >= T.min && o.v.g <= T.max); if (!pool.length) pool = topic.v.map((v, i) => ({ v, i }));
+  const used = o => pxRound.v.includes(id + '#' + o.i), last = o => S.lastV.includes(id + '#' + o.i);
+  let best = Infinity; pool.forEach(o => best = Math.min(best, Math.abs(o.v.g - lvl)));
+  const near = pool.filter(o => Math.abs(o.v.g - lvl) <= Math.max(1, best) + 0.5);
+  let cand = near.filter(o => !used(o) && !last(o));
+  if (!cand.length) cand = near.filter(o => !used(o));
+  if (!cand.length) cand = pool.filter(o => !used(o) && Math.abs(o.v.g - lvl) <= 2.5);
+  if (!cand.length) { // every type used: start a new cycle, but never repeat the one just asked
+    const prev = pxRound.v.filter(k => k.startsWith(id + '#')).pop();
+    pxRound.v = pxRound.v.filter(k => !k.startsWith(id + '#'));
+    cand = pool.filter(o => Math.abs(o.v.g - lvl) <= 2.5 && id + '#' + o.i !== prev);
+    if (!cand.length) cand = pool.filter(o => id + '#' + o.i !== prev);
+    if (!cand.length) cand = pool;
+  }
+  const o = P(cand); pxRound.v.push(id + '#' + o.i);
+  const q = generate(Object.assign({}, topic, { v: [o.v] }), o.v.g, sess.cfg.tier, seen);
+  seen.add(q.key); S.recent = [...seen].slice(-300);
+  return q;
+}
+const _nextQPX = nextQ;
+nextQ = function (same) {
+  const c = sess.cfg; sess.selfShow = false;
+  if (same || c.diag || c.mode === 'exam') return _nextQPX(same);
+  let q = null;
+  if (c.pp) q = ppPick(c);
+  if (!q) {
+    let topic;
+    if (c.topic) topic = TOPIC(c.topic);
+    else {
+      const ts = scopeTopics(c);
+      let pool = ts.filter(t => !pxRound.topics.includes(t.id));
+      if (!pool.length) { pxRound.topics = []; pool = ts; }
+      const fresh = pool.filter(t => !S.lastTopics.includes(t.id)); if (fresh.length) pool = fresh;
+      topic = weightedPick(pool); pxRound.topics.push(topic.id);
+    }
+    let lvl = lvOf(topic.id, c.tier);
+    if (c.mode === 'boss') lvl = Math.min(TIERS[c.tier].max, Math.max(lvl + 1.5, TIERS[c.tier].start + 2));
+    q = pxVariantQ(topic, lvl);
+  }
+  sess.q = q; sess.fb = null; sess.assist = { hint: false, steps: 0, sol: false }; sess.sel = null;
+};
+const _startPX = start;
+start = function (cfg) {
+  if (!cfg.diag && cfg.mode !== 'exam') pxRound = { topics: [], v: [], pp: [] };
+  _startPX(cfg);
+  if (sess && !cfg.diag && cfg.mode === 'quick' && sess.len !== S.qlen) { sess.len = S.qlen; render(); }
+};
+const _endPX = endSession;
+endSession = function () {
+  if (sess && !sess.cfg.diag && sess.cfg.mode !== 'exam' && pxRound.topics.length) { S.lastTopics = pxRound.topics.slice(-12); S.lastV = pxRound.v.slice(-20); }
+  return _endPX();
+};
+
+/* ---------- answers for the new question kinds ---------- */
+const normTxt = s => String(s == null ? '' : s).toLowerCase().replace(/[−–—]/g, '-').replace(/[×✕]/g, 'x').replace(/pi/g, 'π').replace(/\band\b/g, ',').replace(/[\s,;]+/g, '').replace(/[.。]$/, '');
+const tokSet = s => String(s == null ? '' : s).toLowerCase().replace(/[−–—]/g, '-').split(/[\s,;]+|\band\b/).filter(Boolean).sort().join('|');
+const _checkPX = check;
+check = function (q, input) {
+  if (q.kind === 'self') return { invalid: true };
+  if (q.kind === 'text') { if (!String(input || '').trim()) return { invalid: true }; return q.alts.some(a => normTxt(a) === normTxt(input) || (q.anyOrder && tokSet(a) === tokSet(input))) ? { ok: true } : { ok: false }; }
+  if (q.kind === 'num' && (q.tol || q.alts)) {
+    const v = parseValue(input); if (v == null) return { invalid: true };
+    const tol = q.tol || 1e-6; const list = q.alts || [q.answer];
+    return list.some(a => Math.abs(v - a) <= tol) ? { ok: true } : { ok: false, why: q.alts ? null : diagnose(v, q.answer) };
+  }
+  return _checkPX(q, input);
+};
+const _ansHTMLPX = answerHTML;
+answerHTML = function (q) { if (q.ansTxt) return q.ansTxt; if (q.kind === 'self') return 'see the mark scheme'; return _ansHTMLPX(q); };
+const _answerUIPX = answerUI;
+answerUI = function (q, f, exam) {
+  if (q.kind === 'self') {
+    if (f) return '';
+    if (!sess.selfShow) return `<p class="small mut">Work it out on paper first, the way you would in the exam. Then check it against the mark scheme.</p><button class="btn full" data-act="selfshow" data-autofocus>${ic('eye', 18)} Show the answer</button>`;
+    return `<div class="callout ok"><div><b>Answer</b>${q.ansTxt ? `<div style="font-size:1.15em;margin:4px 0">${q.ansTxt}</div>` : ''}<div class="small">${q.steps[0]}</div></div></div><p style="margin:12px 0 8px"><b>Did you get it right?</b></p><div class="grid2"><button class="btn ok" data-act="selfmark" data-arg="1" data-autofocus>${ic('check', 18)} Yes</button><button class="btn sec" data-act="selfmark" data-arg="0">Not yet</button></div>`;
+  }
+  if (q.kind === 'text') return _answerUIPX(Object.assign({}, q, { kind: 'num' }), f, exam).replace('inputmode="decimal"', 'inputmode="text"');
+  return _answerUIPX(q, f, exam);
+};
+const _submitPX = submit;
+submit = function (mc) { if (sess && sess.q && sess.q.kind === 'self') return; return _submitPX(mc); };
+const _hintFmtPX = hintFormat;
+hintFormat = q => q.kind === 'text' ? 'Type your answer.' : q.alts ? 'Type a number.' : _hintFmtPX(q);
+
+/* ---------- screens ---------- */
+const lenSeg = () => `<div class="seg" role="group" aria-label="Number of questions" style="margin-top:10px">${[5, 10].map(n => `<button data-act="qlen" data-arg="${n}" aria-pressed="${S.qlen === n}">${n} questions</button>`).join('')}</div>`;
+const _pickPX = pick;
+pick = function () {
+  let h = _pickPX(); const m = vp.mode;
+  if (!['quick', 'survival', 'time'].includes(m)) return h;
+  if (m === 'quick') h = h.replace('Five questions. A good warm-up.', `${S.qlen === 10 ? 'Ten' : 'Five'} questions, each a different type of question from last time. A good warm-up.`);
+  const n = ppPool(S.tier).filter(o => !o.bank).length, nb = ppPool(S.tier).filter(o => o.bank).length;
+  const cards = `<article class="card hov focus"><div class="row"><span class="tic">${ic('file', 20)}</span><h3 style="margin:0">Exam-style questions</h3></div><p class="small mut">Laid out like the real papers: the same kinds of question, diagrams and marks, with new numbers. ${n + nb} questions${nb ? `, including ${nb} real past-paper questions from your teacher` : ''}.</p><div class="cardfoot">${lnk('startPP', 'mix', 'Start')}</div></article>`
+    + (nb ? `<article class="card hov"><div class="row"><span class="tic">${ic('book', 20)}</span><h3 style="margin:0">Real past-paper questions</h3></div><p class="small mut">${nb} question${nb > 1 ? 's' : ''} from real papers, added by your teacher.</p><div class="cardfoot">${lnk('startPP', 'real', 'Start')}</div></article>` : '');
+  return h.replace('<div class="grid2" style="margin-top:16px">', `${m === 'quick' ? lenSeg() : ''}<h2 class="sect">Like the real exam</h2><div class="grid2">${cards}</div><h2 class="sect">Mixed topics</h2><div class="grid2" style="margin-top:4px">`);
+};
+const _topicPX = topicScreen;
+topicScreen = function () { return _topicPX().replace('Quick 5</button>', `Quick ${S.qlen}</button>`); };
+if (typeof lessonView === 'function') { const _lvPX = lessonView; lessonView = function () { return _lvPX().replace('Practise 5</button>', `Practise ${S.qlen}</button>`); }; }
+
+/* ---------- Settings card + bank screen ---------- */
+const _settingsPX = settings;
+settings = function () {
+  const nl = BANK.length, ns = BANK_SHARED.length;
+  const card = `<article class="card"><h2>Teacher: real past-paper questions</h2><p class="small mut">Add screenshots of questions from papers your college can use. They appear in Exam-style practice.</p>${meta('file', `${nl} on this device${ns ? ` · ${ns} shared from questions.json` : ''}`)}<div class="cardfoot"><button class="btn sm" data-act="nav" data-arg="bank">Open question bank</button></div></article>`;
+  return _settingsPX().replace(/<\/main>\s*$/, card + '</main>');
+};
+const _renderPX = render;
+render = function () {
+  if (view !== 'bank') return _renderPX();
+  app.innerHTML = bankView();
+  const nav = document.getElementById('nav'); nav.hidden = false;
+  nav.querySelectorAll('button').forEach(b => b.setAttribute('aria-current', b.dataset.arg === 'settings' ? 'page' : 'false'));
+  pxBindBank();
+};
+let bankDraftImg = null;
+function topicOptions(sel) { return CATS.filter(c => c.id !== 'Exam').map(c => `<optgroup label="${c.id}">${TOPICS.filter(t => t.cat === c.id).map(t => `<option value="${t.id}" ${t.id === sel ? 'selected' : ''}>${t.name}</option>`).join('')}</optgroup>`).join(''); }
+function bankView() {
+  const d = vp.d || {};
+  const list = BANK.map(b => `<div class="bankrow"><img src="${b.img}" alt=""><div style="flex:1;min-width:0"><b>${esc(b.src || 'Past-paper question')}</b><div class="small mut">${TOPIC(b.t).name} · ${b.tier === 'B' ? 'Both tiers' : b.tier === 'H' ? 'Higher' : 'Foundation'} · ${b.marks} mark${b.marks > 1 ? 's' : ''} · ${{ num: 'number', mc: 'multiple choice', text: 'typed answer', self: 'self-marked' }[b.type]}${b.type !== 'self' && b.type !== 'mc' ? ': ' + esc(b.ans) : ''}</div></div><button class="btn sm sec" data-act="bdel" data-arg="${b.id}">${vp.del === b.id ? 'Tap again to delete' : 'Delete'}</button></div>`).join('');
+  return `${header()}<main class="wrapx">${backBtn('nav', 'settings', 'Settings')}<h1 class="pageh">Past-paper question bank</h1>
+  <p class="mut">Add questions from real past papers as pictures. Students meet them in <b>Exam-style questions</b>, mixed in with the modelled ones, or on their own under <b>Real past-paper questions</b>.</p>
+  <article class="card"><h2>Add a question</h2>
+   <div class="field"><span class="small mut">1. Picture of the question</span><div class="dropz" id="bdrop">${bankDraftImg ? `<img src="${bankDraftImg}" alt="Preview">` : `<span>Tap to choose a screenshot, or press Ctrl+V (Cmd+V on Mac) to paste one</span>`}</div><input type="file" id="bimg" accept="image/*" hidden></div>
+   <div class="grid2">
+    <label class="field"><span class="small mut">Where it's from</span><input id="bsrc" placeholder="e.g. AQA June 2023 Paper 1F Q25" value="${esc(d.src || '')}"></label>
+    <label class="field"><span class="small mut">Topic</span><select id="btopic"><option value="">Choose a topic</option>${topicOptions(d.t || '')}</select></label>
+    <label class="field"><span class="small mut">Tier</span><select id="btier">${[['F', 'Foundation'], ['H', 'Higher'], ['B', 'Both']].map(([v, n]) => `<option value="${v}" ${d.tier === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+    <label class="field"><span class="small mut">Roughly what grade</span><select id="bg">${[1, 2, 3, 4, 5, 6, 7, 8, 9].map(g => `<option ${+(d.g || 4) === g ? 'selected' : ''}>${g}</option>`).join('')}</select></label>
+    <label class="field"><span class="small mut">Marks</span><input id="bmarks" type="number" min="1" max="12" value="${d.marks || 1}"></label>
+    <label class="field"><span class="small mut">2. How is it answered?</span><select id="btype">${[['num', 'A number (marked automatically)'], ['mc', 'Pick from options (marked automatically)'], ['text', 'Typed answer, e.g. 2n + 3 (marked automatically)'], ['self', 'Working needed: student checks against the mark scheme']].map(([v, n]) => `<option value="${v}" ${(d.type || 'num') === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
+   </div>
+   <div data-for="num text self" class="field"><label><span class="small mut">Answer <span data-for="num text">(if more than one answer is accepted, separate them with |)</span></span><input id="bans" placeholder="e.g. 9" value="${esc(d.ans || '')}"></label></div>
+   <div data-for="mc" class="grid2"><label class="field"><span class="small mut">Options, separated with | (in the order on the paper)</span><input id="bopts" placeholder="0 | 1/2 | √3/2 | 1" value="${esc(d.opts || '')}"></label><label class="field"><span class="small mut">Which option is right? (1 = first)</span><input id="bcorrect" type="number" min="1" max="6" value="${(+d.correct || 0) + 1}"></label></div>
+   <label class="field"><span class="small mut">Worked answer / mark scheme (shown after they answer)</span><textarea id="bms" rows="3" placeholder="e.g. x² − 3x − 10 = 120 → x² − 3x − 130 = 0 → (x − 13)(x + 10) = 0 → x = 13">${esc(d.ms || '')}</textarea></label>
+   <div id="bmsg" class="small" role="alert" style="min-height:1.2em"></div>
+   <button class="btn full" data-act="bsave">${ic('check', 18)} Save question</button></article>
+  <article class="card"><div class="row between"><h2 style="margin:0">On this device (${BANK.length})</h2>${BANK.length ? `<button class="btn sm sec" data-act="startPP2" data-arg="real">Try them</button>` : ''}</div>${list || '<p class="small mut">No questions yet.</p>'}</article>
+  <article class="card"><h2>Share with your students</h2>
+   <p class="small mut">Questions you add here stay on this device. To give them to every student:</p>
+   <ol class="small"><li>Tap <b>Download pack</b>. You get a file called <code>questions.json</code>.</li><li>In your GitHub repository, choose <b>Add file → Upload files</b> and upload <code>questions.json</code> next to <code>index.html</code>. Commit.</li><li>Every student's game picks the questions up the next time it opens. Upload a new pack whenever you add more.</li></ol>
+   <div class="row wrapf" style="gap:10px"><button class="btn sm" data-act="bexp" ${allBank().length ? '' : 'disabled'}>Download pack</button><button class="btn sm sec" data-act="bimp">Load a pack</button><input type="file" id="bpack" accept=".json,application/json" hidden></div>
+   ${BANK_SHARED.length ? `<p class="small mut" style="margin-top:10px">${BANK_SHARED.length} question${BANK_SHARED.length > 1 ? 's are' : ' is'} loaded from questions.json on this site.</p>` : ''}</article></main>`;
+}
+function bankShowFields() { const t = (document.getElementById('btype') || {}).value || 'num'; app.querySelectorAll('[data-for]').forEach(el => el.hidden = !el.dataset.for.split(' ').includes(t)); }
+function bankReadDraft() {
+  const g = id => (document.getElementById(id) || {}).value;
+  return { src: (g('bsrc') || '').trim(), t: g('btopic'), tier: g('btier'), g: +g('bg') || 4, marks: Math.max(1, Math.min(12, +g('bmarks') || 1)), type: g('btype'), ans: (g('bans') || '').trim(), opts: (g('bopts') || '').trim(), correct: Math.max(0, (+g('bcorrect') || 1) - 1), ms: (g('bms') || '').trim() };
+}
+function shrinkImage(file, cb) {
+  const fr2 = new FileReader();
+  fr2.onload = () => { const im = new Image(); im.onload = () => {
+    const W = Math.min(1100, im.width), H = Math.round(im.height * W / im.width), c = document.createElement('canvas'); c.width = W; c.height = H;
+    const x = c.getContext('2d'); x.fillStyle = '#fff'; x.fillRect(0, 0, W, H); x.drawImage(im, 0, 0, W, H);
+    cb(c.toDataURL('image/jpeg', 0.85));
+  }; im.onerror = () => toast('⚠️', 'That file is not a picture this browser can read.'); im.src = fr2.result; };
+  fr2.readAsDataURL(file);
+}
+function pxSetImg(file) { if (!file || !/^image\//.test(file.type)) return; vp.d = bankReadDraft(); shrinkImage(file, url => { bankDraftImg = url; render(); }); }
+function pxBindBank() {
+  bankShowFields();
+  const ty = document.getElementById('btype'); if (ty) ty.onchange = bankShowFields;
+  const dz = document.getElementById('bdrop'), fi = document.getElementById('bimg');
+  if (dz && fi) { dz.onclick = () => fi.click(); fi.onchange = () => pxSetImg(fi.files[0]); dz.ondragover = e => e.preventDefault(); dz.ondrop = e => { e.preventDefault(); pxSetImg(e.dataTransfer.files[0]); }; }
+  const pk = document.getElementById('bpack'); if (pk) pk.onchange = () => { const f = pk.files[0]; if (!f) return; const r = new FileReader(); r.onload = () => { try { const d = JSON.parse(r.result); const items = (d.items || []).filter(bankOk); const ids = new Set(BANK.map(b => b.id)); let n = 0; items.forEach(b => { if (!ids.has(b.id)) { BANK.push(b); n++; } }); if (saveBank()) toast('✅', `${n} question${n === 1 ? '' : 's'} added.`); pxCache = {}; render(); } catch (e) { toast('⚠️', 'That file is not a MathsQuest question pack.'); } }; r.readAsText(f); };
+}
+document.addEventListener('paste', e => { if (view !== 'bank') return; const it = [...(e.clipboardData || {}).items || []].find(i => i.type.startsWith('image/')); if (it) { e.preventDefault(); pxSetImg(it.getAsFile()); } });
+
+Object.assign(ACT, {
+  qlen: a => { S.qlen = +a === 10 ? 10 : 5; save(); render(); },
+  startPP: a => start({ mode: vp.mode, cat: 'all', pp: a }),
+  startPP2: a => start({ mode: 'quick', cat: 'all', pp: a }),
+  selfshow: () => { sess.selfShow = true; render(); },
+  selfmark: a => {
+    if (!sess || sess.fb) return; const ok = a === '1';
+    const gain = record(sess.q, ok); sess.selfShow = false;
+    sess.fb = { ok, why: ok ? null : 'Go through the worked answer step by step and see where yours went differently.', gain, input: '' };
+    sound(ok ? 'ok' : 'bad'); if (ok) confetti();
+    const m = sess.cfg.mode;
+    if (m === 'survival') { S.survivalBest = Math.max(S.survivalBest, sess.correct); save(); }
+    if (m === 'time') { S.timeBest = Math.max(S.timeBest, sess.correct); sess.paused = !ok; if (ok) { sess.i++; nextQ(); } }
+    render();
+  },
+  bsave: () => {
+    const d = bankReadDraft(), msg = document.getElementById('bmsg'); const err = t => { msg.textContent = t; msg.style.color = 'var(--bad, #d33)'; };
+    if (!bankDraftImg) return err('Add a picture of the question first.');
+    if (!d.t) return err('Choose the topic it tests.');
+    if (d.type === 'mc') { const n = d.opts.split('|').filter(s => s.trim()).length; if (n < 2) return err('Type at least two options, separated with |.'); if (d.correct >= n) return err(`There are only ${n} options. Which one is right?`); }
+    if (d.type === 'num' && !d.ans.split('|').some(s => parseValue(s) != null)) return err('Type the answer as a number, e.g. 9 or 2.5.');
+    if (d.type === 'text' && !d.ans) return err('Type the answer.');
+    if (d.type === 'self' && !d.ans && !d.ms) return err('Type the answer or the worked answer so students can check themselves.');
+    const b = Object.assign({ id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6), img: bankDraftImg }, d);
+    BANK.unshift(b);
+    if (!saveBank()) { BANK.shift(); return; }
+    bankDraftImg = null; vp.d = { src: d.src, t: d.t, tier: d.tier, g: d.g, type: d.type, marks: 1 }; pxCache = {};
+    toast('✅', 'Question saved.'); render(); window.scrollTo(0, 0);
+  },
+  bdel: a => { if (vp.del !== a) { vp.d = bankReadDraft(); vp.del = a; render(); return; } BANK = BANK.filter(b => b.id !== a); saveBank(); pxCache = {}; vp.del = null; vp.d = bankReadDraft(); render(); },
+  bimp: () => { const p = document.getElementById('bpack'); if (p) p.click(); },
+  bexp: () => {
+    const data = JSON.stringify({ app: 'mathsquest', v: 1, made: new Date().toISOString(), items: allBank() });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([data], { type: 'application/json' })); a.download = 'questions.json';
+    document.body.appendChild(a); a.click(); setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    toast('⬇️', 'questions.json downloaded. Upload it to GitHub next to index.html.');
+  },
+});
+
+/* tap a past-paper picture to see it full size */
+document.addEventListener('click', e => {
+  const im = e.target.closest && e.target.closest('.bankimg'); if (!im) return;
+  const o = document.createElement('div'); o.className = 'zoomov'; o.setAttribute('role', 'dialog'); o.setAttribute('aria-label', 'Question, full size');
+  o.innerHTML = `<button class="btn sm" aria-label="Close">Close ✕</button><div class="zoomsc"><img src="${im.src}" alt="${im.alt}"></div>`;
+  o.addEventListener('click', ev => { if (ev.target.closest('button') || ev.target === o) o.remove(); });
+  document.body.appendChild(o); o.querySelector('button').focus();
+});
+document.addEventListener('keydown', e => { if (e.key === 'Escape') { const o = document.querySelector('.zoomov'); if (o) { o.remove(); e.stopImmediatePropagation(); } } }, true);
 </script>
 </body>
 </html>
