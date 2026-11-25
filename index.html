@@ -251,6 +251,9 @@ body.teach .qtext,body.teach .callout{font-size:1.15rem}
  .fsseg{display:flex;flex-wrap:wrap;justify-content:center;border-radius:18px}
  .fsseg button{padding:8px 10px;font-size:.85rem}
 }
+.lfig{margin:8px 0 4px}.lfig .qsvg{max-width:520px}
+.qsvg.fsv{max-width:520px}.figrow .qsvg.fsv{max-width:48%}
+.qsvg.receipt{max-width:280px}.qsvg.money{max-width:420px}
 </style>
 </head>
 <body>
@@ -6027,6 +6030,771 @@ FU('L2', 2, 'l2-prob', 'Combined probability and scatter diagrams', '🎲', '26,
    () => { const p = R(5, 45) / 100; return Q({ text: `The probability a bus is late is ${fmt(p)}. What is the probability it is not late?`, answer: rnd(1 - p, 2), hint: 'All probabilities add up to 1.', steps: [`1 − ${fmt(p)} = <b>${fmt(rnd(1 - p, 2))}</b>`] }); }]);
 
 /* =========================================================
+   FUNCTIONAL SKILLS ILLUSTRATIONS (FV)
+   Everyday pictures for E1–L2: coins, notes, price tags, receipts,
+   number lines, counters, fraction bars, rulers, scales,
+   thermometers, calendars, shapes, solids, nets, maps, charts.
+   All SVG, theme-aware (currentColor + CSS vars).
+   ========================================================= */
+const FV = (() => {
+  const r1 = n => Math.round(n * 10) / 10;
+  const sv = (w, h, body, label, cls = '') => `<svg class="qsvg fig fsv ${cls}" style="max-width:min(100%,${Math.round(w * (cls === 'money' ? 1.8 : 1.3))}px)" viewBox="0 0 ${r1(w)} ${r1(h)}" role="img" aria-label="${String(label).replace(/"/g, '').replace(/<[^>]+>/g, '')}">${body}</svg>`;
+  const T = (x, y, s, o = {}) => `<text x="${r1(x)}" y="${r1(y)}" text-anchor="${o.a || 'middle'}" class="sl${o.sm ? ' sm' : ''}${o.acc ? ' acc' : ''}"${o.fs ? ` style="font-size:${o.fs}px"` : ''}${o.fill ? ` fill="${o.fill}"` : ''}${o.rot ? ` transform="rotate(${o.rot} ${r1(x)} ${r1(y)})"` : ''}>${s}</text>`;
+  const Ln = (x1, y1, x2, y2, o = {}) => `<line x1="${r1(x1)}" y1="${r1(y1)}" x2="${r1(x2)}" y2="${r1(y2)}" stroke="${o.col || 'currentColor'}" stroke-width="${o.w || 2.5}"${o.dash ? ' stroke-dasharray="6 5"' : ''}${o.arrow ? ' marker-end="url(#fvArr)"' : ''} stroke-linecap="round"/>`;
+  const Rc = (x, y, w, h, o = {}) => `<rect x="${r1(x)}" y="${r1(y)}" width="${r1(w)}" height="${r1(h)}" rx="${o.rx || 0}" fill="${o.fill || 'var(--svgfill)'}" stroke="${o.stroke || 'currentColor'}" stroke-width="${o.w == null ? 2.5 : o.w}"${o.dash ? ' stroke-dasharray="6 5"' : ''}/>`;
+  const Ci = (x, y, r, o = {}) => `<circle cx="${r1(x)}" cy="${r1(y)}" r="${r1(r)}" fill="${o.fill || 'var(--svgfill)'}" stroke="${o.stroke || 'currentColor'}" stroke-width="${o.w == null ? 2.5 : o.w}"/>`;
+  const PL = (pts, o = {}) => `<polygon points="${pts.map(p => r1(p[0]) + ',' + r1(p[1])).join(' ')}" fill="${o.fill || 'var(--svgfill)'}" stroke="currentColor" stroke-width="${o.w || 2.5}"${o.dash ? ' stroke-dasharray="6 5"' : ''} stroke-linejoin="round"/>`;
+  const ARR = `<defs><marker id="fvArr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker></defs>`;
+  const rad = d => d * Math.PI / 180;
+  const C = { red: 'var(--fig4,#FFC9D6)', yel: 'var(--fig2,#FFD9A8)', grn: 'var(--fig3,#C9F0D6)', blu: 'var(--fig5,#CFE8FF)', pur: 'var(--svgfill)', gry: 'var(--fig6,#EEE)' };
+  const PAL = [C.pur, C.yel, C.grn, C.red, C.blu, C.gry];
+  const ngon = (cx, cy, r, n, rot = -90) => Array.from({ length: n }, (_, i) => [cx + r * Math.cos(rad(rot + i * 360 / n)), cy + r * Math.sin(rad(rot + i * 360 / n))]);
+
+  /* ---------- money ---------- */
+  const COIN = { '1p': [17, '#E0A46E', 0], '2p': [23, '#E0A46E', 0], '5p': [15, '#DADFE6', 0], '10p': [22, '#DADFE6', 0], '20p': [18, '#DADFE6', 7], '50p': [23, '#DADFE6', 7], '£1': [20, '#F2C95A', 12], '£2': [24, '#DADFE6', 0] };
+  function coin(v, cx, cy) {
+    const [r, col, sides] = COIN[v]; let s = sides ? `<polygon points="${ngon(cx, cy, r, sides).map(p => r1(p[0]) + ',' + r1(p[1])).join(' ')}" fill="${col}" stroke="#6b5a3a" stroke-width="2"/>` : `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${col}" stroke="#6b5a3a" stroke-width="2"/>`;
+    if (v === '£2') s += `<circle cx="${cx}" cy="${cy}" r="${r - 6}" fill="#F2C95A" stroke="#6b5a3a" stroke-width="1.2"/>`;
+    return s + `<text x="${cx}" y="${cy + 5}" text-anchor="middle" style="font:800 ${r > 19 ? 14 : 12}px var(--font)" fill="#2a2a2a">${v}</text>`;
+  }
+  const NOTE = { '£5': '#9AD8C4', '£10': '#F0B07A', '£20': '#C9A8EE', '£50': '#F4A0A0' };
+  function note(v, x, y) { return `<rect x="${x}" y="${y}" width="96" height="52" rx="5" fill="${NOTE[v]}" stroke="#4a4a4a" stroke-width="2"/><circle cx="${x + 26}" cy="${y + 26}" r="13" fill="rgba(255,255,255,.55)"/><text x="${x + 66}" y="${y + 33}" text-anchor="middle" style="font:800 19px var(--font)" fill="#222">${v}</text>`; }
+  /* money(['£10','£5','20p','2p']) draws notes then coins */
+  function money(items, label) {
+    const notes = items.filter(v => NOTE[v]), coins = items.filter(v => COIN[v]);
+    let s = '', x = 6, y = 6, w = 0;
+    notes.forEach((v, i) => { const nx = 6 + (i % 3) * 104, ny = 6 + Math.floor(i / 3) * 60; s += note(v, nx, ny); w = Math.max(w, nx + 100); y = ny + 60; });
+    if (!notes.length) y = 6;
+    const per = 7; coins.forEach((v, i) => { const cx = 30 + (i % per) * 52, cy = y + 28 + Math.floor(i / per) * 54; s += coin(v, cx, cy); w = Math.max(w, cx + 28); });
+    const h = (coins.length ? y + 28 + Math.ceil(coins.length / per) * 54 - 22 : y) + 6;
+    return sv(Math.max(w, 120), h, s, label || 'Money: ' + items.join(', '), 'money');
+  }
+  /* price tags: [[emoji, name, price text]] */
+  function tags(items) {
+    let s = ''; items.forEach(([e, n, p], i) => { const x = 8 + i * 116; s += `<text x="${x + 52}" y="46" text-anchor="middle" style="font-size:38px">${e}</text>` + `<path d="M${x + 6},62 h86 l12,16 l-12,16 h-86 z" fill="${C.yel}" stroke="currentColor" stroke-width="2"/><circle cx="${x + 90}" cy="78" r="3" fill="currentColor"/>` + T(x + 48, 84, p, { fs: 17 }) + T(x + 52, 114, n, { sm: 1 }); });
+    return sv(items.length * 116 + 8, 122, s, 'Price tags: ' + items.map(i => i[1] + ' ' + i[2]).join(', '));
+  }
+  /* receipt: lines [[item, price]], o.total, o.title */
+  function receipt(lines, o = {}) {
+    const h = 64 + lines.length * 24 + (o.total ? 34 : 6) + (o.foot ? 24 : 0); let s = `<path d="M20,6 h220 v${h - 18} l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 l-11,-10 l-11,10 z" fill="var(--surface,#fff)" stroke="currentColor" stroke-width="2"/>`;
+    s += T(130, 32, o.title || 'RECEIPT', { fs: 15 }) + Ln(34, 44, 226, 44, { w: 1, dash: 1 });
+    lines.forEach(([a, b], i) => { s += `<text x="36" y="${68 + i * 24}" class="sl sm" style="font-weight:600">${a}</text>` + T(224, 68 + i * 24, b, { a: 'end', sm: 1 }); });
+    let y = 68 + lines.length * 24;
+    if (o.total) { s += Ln(34, y - 12, 226, y - 12, { w: 1.5 }) + `<text x="36" y="${y + 10}" class="sl">TOTAL</text>` + T(224, y + 10, o.total, { a: 'end' }); y += 34; }
+    if (o.foot) s += T(130, y + 4, o.foot, { sm: 1 });
+    return sv(260, h + 4, s, 'Receipt', 'receipt');
+  }
+
+  /* ---------- counting & number ---------- */
+  /* things: n emoji in rows; o.cross = how many crossed out (from the end); o.groups = [a,b] two groups */
+  function things(emoji, n, o = {}) {
+    const per = o.per || 5, gx = 46, gy = 48; let s = '';
+    if (o.groups) { let x0 = 8; o.groups.forEach((g, k) => { for (let i = 0; i < g; i++) { const x = x0 + (i % per) * gx, y = 10 + Math.floor(i / per) * gy; s += `<text x="${x + 20}" y="${y + 34}" text-anchor="middle" style="font-size:34px">${emoji}</text>`; } const w = Math.min(g, per) * gx; s += Rc(x0 - 4, 4, w + 4, Math.ceil(g / per) * gy + 8, { fill: 'none', rx: 12, w: 2, dash: 1 }); x0 += w + 30; if (k === 0) s += T(x0 - 15, 40, '+', { fs: 26 }); }); return sv(x0, Math.ceil(Math.max(...o.groups) / per) * gy + 20, s, `Two groups of ${emoji}: ${o.groups.join(' and ')}`); }
+    for (let i = 0; i < n; i++) { const x = 8 + (i % per) * gx + (i % per >= 5 ? 10 : 0), y = 8 + Math.floor(i / per) * gy; s += `<text x="${x + 20}" y="${y + 34}" text-anchor="middle" style="font-size:34px">${emoji}</text>`; if (o.cross && i >= n - o.cross) s += Ln(x + 2, y + 6, x + 38, y + 40, { w: 4, col: '#E5484D' }) + Ln(x + 38, y + 6, x + 2, y + 40, { w: 4, col: '#E5484D' }); }
+    return sv(Math.min(n, per) * gx + 16 + (per > 5 ? 10 : 0), Math.ceil(n / per) * gy + 12, s, `${n} ${emoji}${o.cross ? `, ${o.cross} crossed out` : ''}`);
+  }
+  /* number line: o.marks {v:label}, o.box value shown as ?, o.jumps [[from,to,label]], o.dot [values], o.minor */
+  function nline(min, max, step, o = {}) {
+    const W = o.w || 520, X0 = 26, X1 = W - 26, X = v => X0 + (v - min) / (max - min) * (X1 - X0), Y = o.jumps ? 92 : 50;
+    let s = ARR + Ln(X0 - 12, Y, X1 + 12, Y, { w: 2.5 });
+    const lab = o.label || (v => fmt(v)), every = o.every || 1;
+    if (o.minor) for (let v = min; v <= max + 1e-9; v += o.minor) s += Ln(X(v), Y - 6, X(v), Y + 6, { w: 1.2 });
+    let k = 0; for (let v = min; v <= max + 1e-9; v += step, k++) { const vv = rnd(v, 4); s += Ln(X(vv), Y - 11, X(vv), Y + 11, { w: 2 }); const show = o.box != null && Math.abs(vv - o.box) < 1e-9 ? 'box' : (o.hide && o.hide.includes(vv)) ? '' : k % every === 0 ? lab(vv) : ''; if (show === 'box') s += Rc(X(vv) - 18, Y + 16, 36, 28, { fill: C.yel, rx: 4, w: 2 }) + T(X(vv), Y + 36, '?'); else if (show !== '') s += T(X(vv), Y + 32, show, { sm: 1 }); }
+    (o.dot || []).forEach(v => { s += `<circle cx="${r1(X(v))}" cy="${Y}" r="7" fill="var(--brand,#3A10E5)"/>`; });
+    (o.arrowAt || []).forEach(([v, l]) => { s += Ln(X(v), Y - 46, X(v), Y - 16, { w: 3, arrow: 1 }) + T(X(v), Y - 52, l, { acc: 1 }); });
+    (o.jumps || []).forEach(([a, b, l]) => { const xa = X(a), xb = X(b), mid = (xa + xb) / 2, hgt = Math.min(60, 18 + Math.abs(xb - xa) / 4); s += `<path d="M${r1(xa)},${Y - 6} Q${r1(mid)},${r1(Y - 6 - hgt * 1.6)} ${r1(xb)},${Y - 8}" fill="none" stroke="var(--brand,#3A10E5)" stroke-width="2.5" marker-end="url(#fvArr)"/>` + T(mid, Y - 10 - hgt * 0.8, l, { acc: 1, sm: 1 }); });
+    return sv(W, Y + 50, s, o.alt || `Number line from ${lab(min)} to ${lab(max)}`);
+  }
+  /* base-10 blocks: hundreds squares, tens rods, ones cubes */
+  function blocks(h, t, o) {
+    let s = '', x = 8; const u = 9;
+    for (let i = 0; i < h; i++) { s += Rc(x, 8, u * 10, u * 10, { fill: C.blu, w: 2 }); for (let k = 1; k < 10; k++) s += Ln(x + k * u, 8, x + k * u, 8 + u * 10, { w: .6 }) + Ln(x, 8 + k * u, x + u * 10, 8 + k * u, { w: .6 }); x += u * 10 + 10; }
+    for (let i = 0; i < t; i++) { s += Rc(x, 8, u, u * 10, { fill: C.grn, w: 2 }); for (let k = 1; k < 10; k++) s += Ln(x, 8 + k * u, x + u, 8 + k * u, { w: .6 }); x += u + 6; }
+    x += 6; for (let i = 0; i < o; i++) { s += Rc(x + (i % 2) * (u + 4), 8 + u * 10 - (Math.floor(i / 2) + 1) * (u + 4) + 4, u, u, { fill: C.yel, w: 2 }); if (i % 2) x += 0; } if (o) x += 2 * (u + 4);
+    return sv(x + 8, u * 10 + 16, s, `Base ten blocks: ${h} hundreds, ${t} tens, ${o} ones`);
+  }
+  /* place value chart */
+  function pvChart(n, cols) {
+    const names = { M: 'Millions', HTh: 'Hundred thousands', TTh: 'Ten thousands', Th: 'Thousands', H: 'Hundreds', T: 'Tens', O: 'Ones', t: 'tenths', h: 'hundredths', th: 'thousandths' };
+    const cw = 58; let s = ''; cols.forEach((c, i) => { s += Rc(6 + i * cw, 6, cw, 30, { fill: c === c.toLowerCase() ? C.yel : C.blu, w: 2 }) + T(6 + i * cw + cw / 2, 27, c, { sm: 1 }) + Rc(6 + i * cw, 36, cw, 44, { fill: 'var(--surface,#fff)', w: 2 }) + T(6 + i * cw + cw / 2, 66, n[i] == null ? '' : n[i], { fs: 22 }); });
+    const dot = cols.findIndex(c => c === c.toLowerCase()); if (dot > 0) s += `<circle cx="${6 + dot * cw}" cy="${74}" r="4.5" fill="currentColor"/>`;
+    return sv(cols.length * cw + 12, 86, s, 'Place value chart: ' + cols.map((c, i) => names[c] + ' ' + (n[i] ?? '')).join(', '));
+  }
+  /* dot array rows x cols */
+  function array(r, c, emoji) {
+    let s = ''; const g = emoji ? 38 : 30; for (let i = 0; i < r; i++) for (let j = 0; j < c; j++) s += emoji ? `<text x="${14 + j * g + 14}" y="${14 + i * g + 26}" text-anchor="middle" style="font-size:28px">${emoji}</text>` : `<circle cx="${22 + j * g}" cy="${22 + i * g}" r="10" fill="var(--brand,#3A10E5)" opacity=".85"/>`;
+    return sv(c * g + 16, r * g + 16, s, `${r} rows of ${c}`);
+  }
+  /* sharing: total items shown on k plates */
+  function plates(k, each, emoji = '🍪', left = 0) {
+    let s = ''; for (let i = 0; i < k; i++) { const cx = 70 + i * 130; s += `<ellipse cx="${cx}" cy="70" rx="58" ry="40" fill="var(--surface,#fff)" stroke="currentColor" stroke-width="2.5"/>`; for (let j = 0; j < each; j++) s += `<text x="${cx - 30 + (j % 3) * 30}" y="${62 + Math.floor(j / 3) * 26}" text-anchor="middle" style="font-size:22px">${emoji}</text>`; }
+    for (let j = 0; j < left; j++) s += `<text x="${k * 130 + 20 + j * 28}" y="78" text-anchor="middle" style="font-size:22px">${emoji}</text>`;
+    return sv(k * 130 + 14 + (left ? left * 28 + 20 : 0), 130, s, `${k} plates with ${each} each${left ? `, ${left} left over` : ''}`);
+  }
+  /* boxes: n boxes each holding k (egg box style) */
+  function boxes(n, k, emoji = '🥚', label = '') {
+    let s = ''; const cols = Math.min(k, 6), rows = Math.ceil(k / cols), bw = cols * 26 + 12, bh = rows * 28 + 12;
+    for (let b = 0; b < n; b++) { const x = 8 + (b % 4) * (bw + 14), y = 8 + Math.floor(b / 4) * (bh + 14); s += Rc(x, y, bw, bh, { fill: C.yel, rx: 8, w: 2 }); for (let j = 0; j < k; j++) s += `<text x="${x + 19 + (j % cols) * 26}" y="${y + 30 + Math.floor(j / cols) * 28}" text-anchor="middle" style="font-size:20px">${emoji}</text>`; }
+    return sv(Math.min(n, 4) * (bw + 14) + 4, Math.ceil(n / 4) * (bh + 14) + 4, s, label || `${n} boxes of ${k}`);
+  }
+  /* sequence boxes with a ? */
+  function track(vals) { let s = ''; vals.forEach((v, i) => { const x = 8 + i * 76; s += Rc(x, 8, 64, 50, { fill: v === '?' ? C.yel : 'var(--surface,#fff)', rx: 8 }) + T(x + 32, 41, v, { fs: 19 }); if (i < vals.length - 1) s += T(x + 70, 38, '›', { sm: 1 }); }); return sv(vals.length * 76 + 4, 66, s, 'Sequence: ' + vals.join(', ')); }
+
+  /* ---------- fractions ---------- */
+  function fbar(n, d, o = {}) {
+    const W = o.w || 360, cw = W / d; let s = ''; for (let i = 0; i < d; i++) s += Rc(8 + i * cw, 8, cw, 46, { fill: i < n ? (o.col || C.pur) : 'var(--surface,#fff)', w: 2.5 }) + (o.lab ? T(8 + i * cw + cw / 2, 37, o.lab, { sm: 1 }) : '');
+    if (o.total != null) s += `<path d="M8,64 v8 h${W} v-8" fill="none" stroke="currentColor" stroke-width="2"/>` + T(8 + W / 2, 92, o.total, { acc: 1 });
+    return sv(W + 16, o.total != null ? 100 : 62, s, `Bar split into ${d} equal parts, ${n} shaded`);
+  }
+  function fcircle(n, d, r = 70) {
+    let s = ''; const cx = r + 8, cy = r + 8; if (d === 1) return sv(2 * r + 16, 2 * r + 16, Ci(cx, cy, r, { fill: n ? C.pur : 'var(--surface,#fff)' }), 'Whole circle');
+    for (let i = 0; i < d; i++) { const a0 = rad(-90 + i * 360 / d), a1 = rad(-90 + (i + 1) * 360 / d); s += `<path d="M${cx},${cy} L${r1(cx + r * Math.cos(a0))},${r1(cy + r * Math.sin(a0))} A${r},${r} 0 ${360 / d > 180 ? 1 : 0},1 ${r1(cx + r * Math.cos(a1))},${r1(cy + r * Math.sin(a1))} Z" fill="${i < n ? C.pur : 'var(--surface,#fff)'}" stroke="currentColor" stroke-width="2.5"/>`; }
+    return sv(2 * r + 16, 2 * r + 16, s, `Circle split into ${d} equal parts, ${n} shaded`);
+  }
+  function fshapes(list) { // list: [[n,d,'bar'|'circle'|'rect', label]]
+    let s = '', x = 0; list.forEach(([n, d, t, l]) => { const inner = t === 'circle' ? fcircle(n, d, 46) : fbar(n, d, { w: 150 }); const w = t === 'circle' ? 108 : 166; s += `<g transform="translate(${x},0)">${inner.replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}${l ? T(w / 2, t === 'circle' ? 124 : 84, l, { acc: 1 }) : ''}</g>`; x += w + 18; });
+    return sv(x, 132, s, 'Fraction diagrams');
+  }
+  /* grid of 100 squares with n shaded */
+  function hundred(n) { let s = ''; for (let i = 0; i < 100; i++) s += Rc(8 + (i % 10) * 22, 8 + Math.floor(i / 10) * 22, 22, 22, { fill: i < n ? C.pur : 'var(--surface,#fff)', w: 1.2 }); return sv(236, 236, s + Rc(8, 8, 220, 220, { fill: 'none', w: 2.5 }), `Hundred square with ${n} shaded`); }
+
+  /* ---------- measures ---------- */
+  function ruler(len, maxCm, o = {}) { // object of length len cm drawn above a ruler
+    const u = 36, W = maxCm * u + 70; let s = Rc(16, 76, maxCm * u + 12, 56, { fill: C.yel, rx: 4 });
+    for (let i = 0; i <= maxCm * 10; i++) { const x = 22 + i * u / 10, h = i % 10 ? (i % 5 ? 9 : 15) : 22; s += Ln(x, 76, x, 76 + h, { w: i % 10 ? 1 : 1.8 }); if (i % 10 === 0) s += T(x, 122, i / 10, { sm: 1 }); }
+    s += T(W - 8, 122, 'cm', { sm: 1, a: 'end' });
+    const st = o.start || 0, x0 = 22 + st * u, x1 = 22 + (st + len) * u;
+    if (o.obj === 'key') s += Ci(x0 + 14, 46, 14) + Rc(x0 + 26, 41, x1 - x0 - 26, 10, { rx: 2 });
+    else s += `<path d="M${x0},34 h${x1 - x0 - 26} l26,12 l-26,12 h-${x1 - x0 - 26} z" fill="${o.col || C.grn}" stroke="currentColor" stroke-width="2.5"/>` + Rc(x0, 34, 16, 24, { fill: C.red, w: 2 });
+    s += Ln(x0, 30, x0, 74, { w: 1, dash: 1 }) + Ln(x1, 30, x1, 74, { w: 1, dash: 1 });
+    return sv(W, 132, s, `Ruler with an object ${o.hide ? '' : len + ' cm long'}`);
+  }
+  function scale(val, max, step, unit, o = {}) { // dial kitchen scale
+    const cx = 150, cy = 150, R = 110, a0 = 210, sweep = 240, A = v => rad(a0 - v / max * sweep);
+    let s = Rc(40, 250, 220, 26, { rx: 8, fill: C.gry }) + Ci(cx, cy, R + 14, { fill: 'var(--surface,#fff)', w: 4 });
+    const minor = o.minor || step / 2;
+    for (let v = 0; v <= max + 1e-9; v += minor) { const a = A(v), major = Math.abs(v / step - Math.round(v / step)) < 1e-6, r0 = major ? R - 18 : R - 9; s += Ln(cx + r0 * Math.cos(a), cy - r0 * Math.sin(a), cx + R * Math.cos(a), cy - R * Math.sin(a), { w: major ? 2.5 : 1.2 }); if (major && !(o.unlab && v > 0 && v < max)) s += T(cx + (R - 34) * Math.cos(a), cy - (R - 34) * Math.sin(a) + 5, fmt(rnd(v, 3)), { sm: 1 }); }
+    const a = A(val); s += Ln(cx, cy, cx + (R - 12) * Math.cos(a), cy - (R - 12) * Math.sin(a), { w: 4, col: '#E5484D' }) + `<circle cx="${cx}" cy="${cy}" r="8" fill="#E5484D"/>` + T(cx, cy + 52, unit, { sm: 1 });
+    return sv(300, 282, s, `Weighing scale in ${unit}`);
+  }
+  function thermo(t, min, max, step, o = {}) {
+    const x = 60, top = 40, bot = 320, Y = v => bot - (v - min) / (max - min) * (bot - top);
+    let s = Rc(x - 14, top - 10, 28, bot - top + 20, { rx: 14, fill: 'var(--surface,#fff)' }) + Ci(x, bot + 26, 24, { fill: '#F25C5C' }) + `<rect x="${x - 7}" y="${r1(Y(t))}" width="14" height="${r1(bot + 10 - Y(t))}" fill="#F25C5C"/>`;
+    for (let v = min; v <= max + 1e-9; v += step / (o.sub || 1)) { const vv = rnd(v, 3), maj = Math.abs((vv - min) / step - Math.round((vv - min) / step)) < 1e-6; s += Ln(x + 14, Y(vv), x + (maj ? 28 : 21), Y(vv), { w: maj ? 2 : 1 }); if (maj) s += T(x + 34, Y(vv) + 5, (vv < 0 ? '−' + (-vv) : vv), { sm: 1, a: 'start' }); }
+    s += T(x + 22, 18, '°C', { sm: 1, a: 'start' });
+    return sv(130, 380, s, 'Thermometer');
+  }
+  /* balance scales: left heavier if a>b */
+  function balance(la, lb, ea = '🍎', eb = '🍌', a = 1, b = 1) {
+    const tilt = a === b ? 0 : a > b ? 8 : -8; let s = PL([[150, 70], [132, 200], [168, 200]], { fill: C.gry }) + Rc(100, 200, 100, 12, { fill: C.gry, rx: 4 });
+    s += `<g transform="rotate(${-tilt} 150 70)">${Ln(40, 70, 260, 70, { w: 5 })}${Ln(55, 70, 55, 100, { w: 1.5 })}${Ln(245, 70, 245, 100, { w: 1.5 })}<path d="M15,100 h80 q-40,26 -80,0z" fill="${C.yel}" stroke="currentColor" stroke-width="2"/><path d="M205,100 h80 q-40,26 -80,0z" fill="${C.yel}" stroke="currentColor" stroke-width="2"/><text x="55" y="96" text-anchor="middle" style="font-size:28px">${ea}</text><text x="245" y="96" text-anchor="middle" style="font-size:28px">${eb}</text></g>`;
+    s += T(55 - 6, 140 + tilt * 1.5, la, { sm: 1 }) + T(245 + 6, 140 - tilt * 1.5, lb, { sm: 1 });
+    return sv(300, 216, s, `Balance scales with ${la} and ${lb}`);
+  }
+  /* calendar month: start day index 0=Mon */
+  function calendar(month, start, days, o = {}) {
+    const cw = 44; let s = Rc(6, 6, cw * 7, 34, { fill: C.blu, rx: 6 }) + T(6 + cw * 3.5, 29, month, { fs: 16 });
+    ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach((d, i) => { s += T(6 + i * cw + cw / 2, 60, d, { sm: 1 }); });
+    for (let d = 1; d <= days; d++) { const k = start + d - 1, x = 6 + (k % 7) * cw, y = 68 + Math.floor(k / 7) * 34; const hl = o.mark && o.mark.includes(d); s += Rc(x + 2, y, cw - 4, 30, { fill: hl ? C.yel : 'var(--surface,#fff)', w: hl ? 2.5 : 1, rx: 4 }) + T(x + cw / 2, y + 21, d, { sm: 1 }); }
+    return sv(cw * 7 + 12, 68 + Math.ceil((start + days) / 7) * 34 + 6, s, 'Calendar for ' + month);
+  }
+
+  /* ---------- shapes ---------- */
+  function shape2(name, o = {}) {
+    const S = 150, c = S / 2; let p = '';
+    const P = pts => PL(pts, { fill: o.fill || C.pur });
+    if (name === 'circle') p = Ci(c, c, 62, { fill: o.fill || C.pur });
+    else if (name === 'square') p = P([[20, 20], [130, 20], [130, 130], [20, 130]]);
+    else if (name === 'rectangle') p = P([[6, 40], [144, 40], [144, 112], [6, 112]]);
+    else if (name === 'triangle') p = P([[c, 14], [140, 132], [10, 132]]);
+    else if (name === 'right triangle') p = P([[20, 14], [20, 132], [136, 132]]) + `<polyline points="20,116 36,116 36,132" fill="none" stroke="currentColor" stroke-width="2"/>`;
+    else if (name === 'pentagon') p = P(ngon(c, c + 6, 66, 5));
+    else if (name === 'hexagon') p = P(ngon(c, c, 66, 6, 0));
+    else if (name === 'octagon') p = P(ngon(c, c, 66, 8, 22.5));
+    else if (name === 'kite') p = P([[c, 10], [130, 58], [c, 142], [20, 58]]);
+    else if (name === 'semicircle') p = `<path d="M10,110 A65,65 0 0,1 140,110 Z" fill="${C.pur}" stroke="currentColor" stroke-width="2.5"/>`;
+    else if (name === 'heart') p = `<path d="M75,135 C10,90 10,30 50,28 C66,27 75,40 75,50 C75,40 84,27 100,28 C140,30 140,90 75,135Z" fill="${C.red}" stroke="currentColor" stroke-width="2.5"/>`;
+    else if (name === 'arrow') p = P([[10, 55], [90, 55], [90, 25], [140, 75], [90, 125], [90, 95], [10, 95]]);
+    else if (name === 'letterL') p = P([[30, 15], [65, 15], [65, 100], [120, 100], [120, 135], [30, 135]]);
+    else if (name === 'parallelogram') p = P([[40, 35], [145, 35], [110, 115], [5, 115]]);
+    (o.lines || []).forEach(([x1, y1, x2, y2]) => { p += Ln(x1, y1, x2, y2, { w: 2.5, dash: 1, col: '#E5484D' }); });
+    return o.raw ? p : sv(S, S, p, o.alt || name, 'money');
+  }
+  function shapeRow(names, labels) { let s = ''; names.forEach((n, i) => { s += `<g transform="translate(${i * 160},0)">${shape2(n, { raw: 1 })}${labels ? T(75, 168, labels[i], { acc: 1 }) : ''}</g>`; }); return sv(names.length * 160, labels ? 178 : 150, s, 'Shapes ' + (labels || []).join(', ')); }
+  /* small solids, drawn in a 150x150 box */
+  function solid(name) {
+    const fill = C.blu; let s = '';
+    if (name === 'cube') s = PL([[25, 55], [95, 55], [95, 125], [25, 125]], { fill }) + PL([[25, 55], [55, 25], [125, 25], [95, 55]], { fill: C.pur }) + PL([[95, 55], [125, 25], [125, 95], [95, 125]], { fill: C.gry });
+    else if (name === 'cuboid') s = PL([[10, 65], [100, 65], [100, 125], [10, 125]], { fill }) + PL([[10, 65], [45, 35], [135, 35], [100, 65]], { fill: C.pur }) + PL([[100, 65], [135, 35], [135, 95], [100, 125]], { fill: C.gry });
+    else if (name === 'cylinder') s = `<path d="M35,35 v85 a40,13 0 0,0 80,0 v-85" fill="${fill}" stroke="currentColor" stroke-width="2.5"/><ellipse cx="75" cy="35" rx="40" ry="13" fill="${C.pur}" stroke="currentColor" stroke-width="2.5"/>`;
+    else if (name === 'cone') s = `<path d="M75,12 L30,118 a45,14 0 0,0 90,0 Z" fill="${fill}" stroke="currentColor" stroke-width="2.5"/><path d="M30,118 a45,14 0 0,1 90,0" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+    else if (name === 'sphere') s = Ci(75, 75, 58, { fill }) + `<path d="M17,75 a58,17 0 0,0 116,0" fill="none" stroke="currentColor" stroke-width="1.5"/><ellipse cx="55" cy="52" rx="14" ry="9" fill="rgba(255,255,255,.6)"/>`;
+    else if (name === 'pyramid') s = PL([[15, 120], [95, 120], [75, 13]], { fill }) + PL([[95, 120], [135, 95], [75, 13]], { fill: C.gry }) + Ln(15, 120, 55, 95, { w: 1.3, dash: 1 }) + Ln(55, 95, 135, 95, { w: 1.3, dash: 1 }) + Ln(55, 95, 75, 13, { w: 1.3, dash: 1 });
+    else if (name === 'prism') s = PL([[15, 120], [45, 50], [75, 120]], { fill: C.pur }) + PL([[45, 50], [125, 30], [140, 100], [75, 120]], { fill }) + Ln(75, 120, 140, 100, { w: 2.5 });
+    return s;
+  }
+  function solids(names, labels) { let s = ''; names.forEach((n, i) => { s += `<g transform="translate(${i * 156},0)">${solid(n)}${labels ? T(75, 160, labels[i], { acc: 1 }) : ''}</g>`; }); return sv(names.length * 156, labels ? 170 : 145, s, '3D shapes'); }
+  /* angle drawing */
+  function angle(deg, o = {}) {
+    const cx = o.reflex ? 150 : 40, cy = 150, L = 120, a = rad(deg); let s = Ln(cx, cy, cx + L, cy, { w: 3 }) + Ln(cx, cy, cx + L * Math.cos(a), cy - L * Math.sin(a), { w: 3 });
+    if (deg === 90) s += `<polyline points="${cx + 22},${cy} ${cx + 22},${cy - 22} ${cx},${cy - 22}" fill="none" stroke="currentColor" stroke-width="2"/>`;
+    else { const r = 34; s += `<path d="M${cx + r},${cy} A${r},${r} 0 ${deg > 180 ? 1 : 0},0 ${r1(cx + r * Math.cos(a))},${r1(cy - r * Math.sin(a))}" fill="none" stroke="var(--brand,#3A10E5)" stroke-width="3"/>`; }
+    if (o.lab) s += T(cx + 52 * Math.cos(a / 2), cy - 52 * Math.sin(a / 2) + 6, o.lab, { acc: 1 });
+    const minx = Math.min(0, cx + L * Math.cos(a) - 10);
+    return sv(o.reflex ? 300 : 180, o.reflex ? 300 : 170, s, 'Angle');
+  }
+  /* angles on a straight line / in a triangle */
+  function lineAngles(a, lab1, lab2) { const cx = 160, cy = 120, r = 40; let s = Ln(20, cy, 300, cy, { w: 3 }) + Ln(cx, cy, cx + 130 * Math.cos(rad(a)), cy - 130 * Math.sin(rad(a)), { w: 3 }); s += `<path d="M${cx + r},${cy} A${r},${r} 0 0,0 ${r1(cx + r * Math.cos(rad(a)))},${r1(cy - r * Math.sin(rad(a)))}" fill="none" stroke="var(--brand,#3A10E5)" stroke-width="2.5"/>` + T(cx + 62 * Math.cos(rad(a / 2)), cy - 62 * Math.sin(rad(a / 2)) + 5, lab1, { acc: 1 }) + T(cx + 62 * Math.cos(rad((180 + a) / 2)), cy - 62 * Math.sin(rad((180 + a) / 2)) + 5, lab2, { acc: 1 }); return sv(320, 140, s, 'Two angles on a straight line'); }
+  /* nets */
+  function net(kind) {
+    const u = 40; let s = ''; const sq = (x, y, f) => Rc(x, y, u, u, { fill: f || C.blu, w: 2 }), tri = (pts) => PL(pts, { fill: C.yel, w: 2 });
+    if (kind === 'cube') { [[1, 0], [0, 1], [1, 1], [2, 1], [3, 1], [1, 2]].forEach(([i, j]) => { s += sq(10 + i * u, 10 + j * u); }); return sv(4 * u + 20, 3 * u + 20, s, 'Net of 6 squares'); }
+    if (kind === 'notcube') { [[0, 0], [1, 0], [2, 0], [3, 0], [1, 1], [2, 1]].forEach(([i, j]) => { s += sq(10 + i * u, 10 + j * u); }); return sv(4 * u + 20, 2 * u + 20, s, 'Six squares in two rows'); }
+    if (kind === 'cuboid') { const w = 60, h = 30, d = 40, x = 10; s += Rc(x + d, 10, w, d, { fill: C.blu, w: 2 }) + Rc(x, 10 + d, d, h, { fill: C.grn, w: 2 }) + Rc(x + d, 10 + d, w, h, { fill: C.blu, w: 2 }) + Rc(x + d + w, 10 + d, d, h, { fill: C.grn, w: 2 }) + Rc(x + 2 * d + w, 10 + d, w, h, { fill: C.blu, w: 2 }) + Rc(x + d, 10 + d + h, w, d, { fill: C.blu, w: 2 }); return sv(2 * d + 2 * w + 20, 2 * d + h + 20, s, 'Net of 6 rectangles'); }
+    if (kind === 'pyramid') { const x = 70, y = 60; s += sq(x, y) + tri([[x, y], [x + u, y], [x + u / 2, y - 45]]) + tri([[x + u, y], [x + u, y + u], [x + u + 45, y + u / 2]]) + tri([[x, y + u], [x + u, y + u], [x + u / 2, y + u + 45]]) + tri([[x, y], [x, y + u], [x - 45, y + u / 2]]); return sv(180, 165, s, 'Net: one square and four triangles'); }
+    if (kind === 'prism') { const x = 50; s += Rc(x, 50, 100, 40, { fill: C.blu, w: 2 }) + Rc(x, 90, 100, 40, { fill: C.blu, w: 2 }) + Rc(x, 130, 100, 40, { fill: C.blu, w: 2 }) + tri([[x, 90], [x, 130], [x - 35, 110]]) + tri([[x + 100, 90], [x + 100, 130], [x + 135, 110]]); return sv(240, 180, s, 'Net: three rectangles and two triangles'); }
+    if (kind === 'cylinder') { s += Rc(20, 50, 160, 70, { fill: C.blu, w: 2 }) + Ci(70, 25, 22, { fill: C.pur }) + Ci(70, 145, 22, { fill: C.pur }); return sv(200, 175, s, 'Net: a rectangle and two circles'); }
+  }
+  /* simple map with two places and a scale bar */
+  function map(a, b, cm, scaleTxt) {
+    const W = 420; let s = Rc(4, 4, W - 8, 200, { fill: C.grn, rx: 10, w: 2 }) + `<path d="M20,160 C120,120 200,190 300,140 S400,90 410,60" fill="none" stroke="#6CB2E6" stroke-width="10" opacity=".7"/>`;
+    const x0 = 60, x1 = 60 + cm * 36; s += Ci(x0, 80, 9, { fill: '#E5484D' }) + Ci(x1, 80, 9, { fill: '#E5484D' }) + T(x0, 62, a, { sm: 1 }) + T(x1, 62, b, { sm: 1 }) + Ln(x0, 80, x1, 80, { dash: 1, w: 2 });
+    s += Rc(20, 214, 36, 10, { fill: 'currentColor', w: 1 }) + Rc(56, 214, 36, 10, { fill: 'var(--surface,#fff)', w: 1 }) + T(100, 224, scaleTxt, { sm: 1, a: 'start' }) + T(W - 20, 30, 'N ↑', { sm: 1, a: 'end' });
+    return sv(W, 236, s, `Map of ${a} and ${b}`);
+  }
+
+  /* ---------- data ---------- */
+  function tally(n) { let s = '', x = 6; for (let g = 0; g < Math.floor(n / 5); g++) { for (let i = 0; i < 4; i++) s += Ln(x + i * 9, 6, x + i * 9, 40, { w: 3 }); s += Ln(x - 4, 36, x + 31, 10, { w: 3 }); x += 48; } for (let i = 0; i < n % 5; i++) { s += Ln(x + i * 9, 6, x + i * 9, 40, { w: 3 }); } return s; }
+  function tallyChart(rows) { const W = 360; let s = Rc(4, 4, W - 8, 34, { fill: C.blu }) + T(70, 27, 'Item', { sm: 1 }) + T(240, 27, 'Tally', { sm: 1 }); rows.forEach(([l, n], i) => { const y = 38 + i * 50; s += Rc(4, y, 132, 50, { fill: 'var(--surface,#fff)', w: 1.5 }) + Rc(136, y, W - 140, 50, { fill: 'var(--surface,#fff)', w: 1.5 }) + T(70, y + 31, l, { sm: 1 }) + `<g transform="translate(150,${y + 2})">${tally(n)}</g>`; }); return sv(W, 44 + rows.length * 50, s, 'Tally chart'); }
+  function picto(rows, emoji, key) { let s = ''; rows.forEach(([l, n], i) => { const y = 8 + i * 46; s += T(90, y + 30, l, { sm: 1, a: 'end' }); for (let k = 0; k < Math.ceil(n); k++) { const part = Math.min(1, n - k); s += `<clipPath id="pc${i}${k}"><rect x="${104 + k * 40}" y="${y}" width="${40 * part}" height="44"/></clipPath><text x="${104 + k * 40 + 20}" y="${y + 32}" text-anchor="middle" style="font-size:30px" clip-path="url(#pc${i}${k})">${emoji}</text>`; } }); const h = rows.length * 46 + 16; s += T(104, h + 8, `Key: ${emoji} = ${key}`, { sm: 1, a: 'start' }); return sv(110 + Math.max(...rows.map(r => Math.ceil(r[1]))) * 40 + 10, h + 18, s, 'Pictogram, key ' + emoji + ' = ' + key); }
+  function scatter(pts, xl, yl, o = {}) { const X0 = 50, Y0 = 210, W = 260, H = 180, xmax = o.xmax || 10, ymax = o.ymax || 10; let s = Ln(X0, Y0, X0 + W, Y0, { w: 2 }) + Ln(X0, Y0, X0, Y0 - H, { w: 2 }); for (let i = 0; i <= 5; i++) s += Ln(X0 + i * W / 5, Y0, X0 + i * W / 5, Y0 - H, { w: .5 }) + Ln(X0, Y0 - i * H / 5, X0 + W, Y0 - i * H / 5, { w: .5 }); pts.forEach(([x, y]) => { s += `<path d="M${r1(X0 + x / xmax * W - 5)},${r1(Y0 - y / ymax * H - 5)} l10,10 m0,-10 l-10,10" stroke="var(--brand,#3A10E5)" stroke-width="2.5"/>`; }); s += T(X0 + W / 2, Y0 + 26, xl, { sm: 1 }) + T(16, Y0 - H / 2, yl, { sm: 1, rot: -90 }); return sv(330, 245, s, `Scatter diagram of ${yl} against ${xl}`); }
+  function dice(vals) { const pip = { 1: [[1, 1]], 2: [[0, 0], [2, 2]], 3: [[0, 0], [1, 1], [2, 2]], 4: [[0, 0], [2, 0], [0, 2], [2, 2]], 5: [[0, 0], [2, 0], [1, 1], [0, 2], [2, 2]], 6: [[0, 0], [2, 0], [0, 1], [2, 1], [0, 2], [2, 2]] }; let s = ''; vals.forEach((v, i) => { const x = 8 + i * 80; s += Rc(x, 8, 64, 64, { fill: 'var(--surface,#fff)', rx: 12 }); (pip[v] || []).forEach(([a, b]) => { s += `<circle cx="${x + 14 + a * 18}" cy="${22 + b * 18}" r="5.5" fill="currentColor"/>`; }); }); return sv(vals.length * 80 + 4, 80, s, 'Dice showing ' + vals.join(', ')); }
+  function bag(counts) { // counts: [[colour name, fill, n]]
+    let s = `<path d="M40,50 Q10,200 60,215 L220,215 Q270,200 240,50 Z" fill="var(--surface,#fff)" stroke="currentColor" stroke-width="2.5"/><path d="M70,50 Q140,20 210,50" fill="none" stroke="currentColor" stroke-width="2.5"/>`; let k = 0; counts.forEach(([n, f, c]) => { for (let i = 0; i < c; i++, k++) s += Ci(70 + (k % 6) * 28, 90 + Math.floor(k / 6) * 28, 11, { fill: f, w: 2 }); });
+    return sv(280, 225, s, 'Bag of counters: ' + counts.map(c => c[2] + ' ' + c[0]).join(', '));
+  }
+  function spinner(labs, fills) { const cx = 110, cy = 110, R = 90, n = labs.length; let s = ''; labs.forEach((l, i) => { const a0 = rad(-90 + i * 360 / n), a1 = rad(-90 + (i + 1) * 360 / n), am = (a0 + a1) / 2; s += `<path d="M${cx},${cy} L${r1(cx + R * Math.cos(a0))},${r1(cy + R * Math.sin(a0))} A${R},${R} 0 0,1 ${r1(cx + R * Math.cos(a1))},${r1(cy + R * Math.sin(a1))} Z" fill="${fills ? fills[i] : PAL[i % PAL.length]}" stroke="currentColor" stroke-width="2"/>` + T(cx + R * .62 * Math.cos(am), cy + R * .62 * Math.sin(am) + 6, l, { sm: 1 }); }); s += Ln(cx, cy, cx + 30, cy - 50, { w: 4 }) + Ci(cx, cy, 7, { fill: 'currentColor' }); return sv(220, 220, s, 'Spinner with ' + n + ' equal sections'); }
+  function probScale(marks) { const X0 = 60, X1 = 460, X = v => X0 + v * (X1 - X0); let s = ARR + Ln(X0, 60, X1, 60, { w: 3 }); [[0, '0', 'Impossible'], [.5, '½', 'Even chance'], [1, '1', 'Certain']].forEach(([v, l, w]) => { s += Ln(X(v), 50, X(v), 70, { w: 2 }) + T(X(v), 92, l, { sm: 1 }) + T(X(v), 112, w, { sm: 1 }); }); (marks || []).forEach(([v, l]) => { s += Ln(X(v), 14, X(v), 52, { w: 3, arrow: 1 }) + T(X(v), 12, l, { acc: 1, sm: 1 }); }); return sv(520, 120, s, 'Probability scale from 0 to 1'); }
+  /* grid of unit squares (area by counting) */
+  function sqgrid(cells, cols, rows) { let s = ''; for (let i = 0; i <= cols; i++) s += Ln(10 + i * 30, 10, 10 + i * 30, 10 + rows * 30, { w: .7 }); for (let j = 0; j <= rows; j++) s += Ln(10, 10 + j * 30, 10 + cols * 30, 10 + j * 30, { w: .7 }); cells.forEach(([i, j]) => { s += Rc(10 + i * 30, 10 + j * 30, 30, 30, { fill: C.pur, w: 1.5 }); }); return sv(cols * 30 + 20, rows * 30 + 20, s, `Shape made of ${cells.length} squares`); }
+  /* two bottles for best buy */
+  function bottles(list) { let s = ''; list.forEach(([lab, size, price], i) => { const x = 30 + i * 170, h = 70 + size / 1000 * 90; s += `<path d="M${x + 30},${200 - h} v-14 h24 v14 q22,10 22,30 v${h - 34} q0,6 -6,6 h-56 q-6,0 -6,-6 v${-(h - 34)} q0,-20 22,-30z" fill="${C.blu}" stroke="currentColor" stroke-width="2.5"/>` + T(x + 42, 228, lab, { acc: 1 }) + T(x + 42, 160, size + ' ml', { sm: 1 }) + `<path d="M${x + 86},${170 - h} h52 l10,12 l-10,12 h-52z" fill="${C.yel}" stroke="currentColor" stroke-width="2"/>` + T(x + 112, 188 - h, price, { sm: 1 }); }); return sv(list.length * 170 + 30, 240, s, 'Bottles: ' + list.map(l => `${l[0]} ${l[1]} ml for ${l[2]}`).join('; ')); }
+  /* circle with radius or diameter */
+  function circ(lab, kind = 'r') { let s = Ci(110, 110, 90) + `<circle cx="110" cy="110" r="4" fill="currentColor"/>`; s += kind === 'r' ? Ln(110, 110, 200, 110, { w: 2.5 }) + T(155, 102, lab, { acc: 1 }) : Ln(20, 110, 200, 110, { w: 2.5 }) + T(110, 100, lab, { acc: 1 }); return sv(220, 220, s, `Circle, ${kind === 'r' ? 'radius' : 'diameter'} ${lab}`); }
+  /* rectangle + semicircle patio */
+  function patio(l, w) { const L = 220, H = 120; let s = `<path d="M20,20 h${L} a${H / 2},${H / 2} 0 0,1 0,${H} h-${L} z" fill="${C.pur}" stroke="currentColor" stroke-width="2.5"/>` + Ln(20 + L, 20, 20 + L, 20 + H, { dash: 1, w: 1.5 }) + T(20 + L / 2, 14, l + ' m', { acc: 1 }) + T(12, 20 + H / 2 + 5, w + ' m', { acc: 1, a: 'end' }); return sv(L + H / 2 + 60, H + 34, s.replace('x="12"', 'x="16"'), `Rectangle ${l} m by ${w} m with a semicircle on the end`).replace('viewBox="0 0', 'viewBox="-30 0'); }
+  /* temperature / bank statement table helper */
+  const table = (head, rows) => FG.tbl(head, rows);
+  /* sample space grid for two dice totals */
+  function diceGrid(hl) { const cw = 40; let s = Rc(6, 6, cw, cw, { fill: C.gry, w: 1 }) + T(26, 31, '+', { sm: 1 }); for (let i = 1; i <= 6; i++) { s += Rc(6 + i * cw, 6, cw, cw, { fill: C.blu, w: 1 }) + T(6 + i * cw + 20, 31, i, { sm: 1 }) + Rc(6, 6 + i * cw, cw, cw, { fill: C.blu, w: 1 }) + T(26, 6 + i * cw + 25, i, { sm: 1 }); for (let j = 1; j <= 6; j++) { const v = i + j, on = hl && hl(v); s += Rc(6 + j * cw, 6 + i * cw, cw, cw, { fill: on ? C.yel : 'var(--surface,#fff)', w: 1 }) + T(6 + j * cw + 20, 6 + i * cw + 25, v, { sm: 1 }); } } return sv(7 * cw + 12, 7 * cw + 12, s, 'Sample space for the totals of two dice'); }
+  /* plan & elevation of a simple house */
+  function house() { return `<g>${PL([[20, 80], [110, 80], [110, 150], [20, 150]], { fill: C.yel })}${PL([[20, 80], [65, 30], [110, 80]], { fill: C.red })}${PL([[110, 80], [65, 30], [160, 20], [200, 70]], { fill: C.red })}${PL([[110, 80], [200, 70], [200, 135], [110, 150]], { fill: C.gry })}${Rc(55, 112, 20, 38, { fill: C.blu, w: 2 })}</g>`; }
+  function houseViews() { const views = [['A', `${Rc(20, 30, 110, 70, { fill: C.red })}${Ln(20, 65, 130, 65, { w: 2 })}`], ['B', `${PL([[20, 100], [20, 60], [75, 20], [130, 60], [130, 100]], { fill: C.yel })}`], ['C', `${Ci(75, 65, 45, { fill: C.blu })}`]]; let s = `<g>${house()}</g>` + T(110, 180, 'Building', { acc: 1 }); views.forEach(([l, b], i) => { s += `<g transform="translate(${230 + i * 150},30)">${b}${T(75, 140, l, { acc: 1 })}</g>`; }); return sv(690, 190, s, 'A building and three views A, B and C'); }
+  /* wall/plank cut */
+  function plank(total, cut) { let s = Rc(10, 30, 400, 34, { fill: C.yel, rx: 3 }) + Rc(10 + 400 * (1 - cut), 30, 400 * cut, 34, { fill: C.red, rx: 3, dash: 1 }) + T(210, 22, total, { acc: 1 }); return sv(420, 74, s, 'Plank with a piece cut off'); }
+  /* cuboid tank via FG */
+  const cuboid = (l, w, h) => FG.cuboid(l, w, h);
+  const cylinder = (r, h) => FG.cylinder(r, h);
+  /* simple bank statement */
+  function statement(rows, title = 'Bank statement') { return `<p class="center small" style="margin:0"><b>${title}</b></p>` + FG.tbl(['Date', 'Details', 'Amount', 'Balance'], rows); }
+  /* clock */
+  const clock = (h, m) => FG.clock(h, m);
+  /* digital clock */
+  function digital(t) { return sv(220, 90, Rc(6, 6, 208, 78, { fill: '#1d1d2b', rx: 12 }) + `<text x="110" y="62" text-anchor="middle" style="font:700 44px ui-monospace,Menlo,monospace" fill="#5CF2A0">${t}</text>`, 'Digital clock showing ' + t); }
+  /* seasons / week strip */
+  function strip(items, hl = -1, w = 92) { let s = ''; items.forEach((t, i) => { s += Rc(6 + i * w, 6, w - 6, 50, { fill: i === hl ? C.yel : (t === '?' ? C.yel : 'var(--surface,#fff)'), rx: 8, w: 2 }) + T(6 + i * w + (w - 6) / 2, 37, t, { sm: 1 }); }); return sv(items.length * w + 8, 62, s, items.join(', ')); }
+  /* payslip */
+  function payslip(rows, net) { return `<p class="center small" style="margin:0"><b>Payslip</b></p>` + FG.tbl(['', 'Hours', 'Rate', 'Pay'], rows.concat(net ? [['<b>Total</b>', '', '', net]] : [])); }
+  /* angle in a triangle */
+  function tri(a, b, lab3 = '?') { const A = [30, 170], B = [330, 170], ta = Math.tan(rad(a)), tb = Math.tan(rad(b)); const x = (B[0] * tb + A[0] * ta) / (ta + tb), y = A[1] - (x - A[0]) * ta; const Cp = [x, Math.max(20, y)]; let s = PL([A, B, Cp]); s += T(A[0] + 46, A[1] - 10, a + '°', { acc: 1, sm: 1 }) + T(B[0] - 46, B[1] - 10, b + '°', { acc: 1, sm: 1 }) + T(Cp[0], Cp[1] + 34, lab3, { acc: 1, sm: 1 }); return sv(360, 190, s, `Triangle with angles ${a}° and ${b}°`); }
+  function quad(angs) { const P = [[30, 170], [320, 180], [270, 40], [80, 60]]; let s = PL(P); const off = [[38, -12], [-40, -12], [-20, 30], [24, 26]]; angs.forEach((a, i) => { s += T(P[i][0] + off[i][0], P[i][1] + off[i][1], a, { acc: 1, sm: 1 }); }); return sv(350, 200, s, 'Quadrilateral with angles ' + angs.join(', ')); }
+  /* weekly bar for budgets as pie */
+  const pie = (secs, title) => FG.pie(secs, title);
+  const bar = (c, v, o) => FG.bar(c, v, o);
+  const line = (c, v, o) => FG.catLine(c, v, o);
+  const grid = (pts, o) => FG.coordGrid(pts, o);
+  const compass = a => FG.compass(a);
+  const jug = (l, m, s, u) => FG.jug(l, m, s, u);
+  /* two side-by-side figures */
+  const row = (...figs) => `<div class="figrow">${figs.join('')}</div>`;
+  /* recipe card */
+  function recipe(title, serves, lines) { let s = Rc(6, 6, 300, 52 + lines.length * 26, { fill: 'var(--surface,#fff)', rx: 10 }) + Rc(6, 6, 300, 40, { fill: C.yel, rx: 10 }) + T(156, 32, `${title} · serves ${serves}`, { sm: 1 }); lines.forEach((l, i) => { s += `<text x="24" y="${70 + i * 26}" class="sl sm" style="font-weight:600">• ${l}</text>`; }); return sv(312, 62 + lines.length * 26, s, `Recipe for ${title}, serves ${serves}: ${lines.join(', ')}`); }
+  /* ratio bar model */
+  function ratioBar(a, b, la, lb, total) { const n = a + b, cw = Math.min(56, 440 / n); let s = ''; for (let i = 0; i < n; i++) s += Rc(70 + i * cw, i < a ? 10 : 10, cw, 40, { fill: i < a ? C.pur : C.yel, w: 2 }); s += T(62, 36, la, { sm: 1, a: 'end' }) + T(70 + n * cw + 8, 36, lb, { sm: 1, a: 'start' }); if (total) s += `<path d="M70,60 v8 h${n * cw} v-8" fill="none" stroke="currentColor" stroke-width="2"/>` + T(70 + n * cw / 2, 88, total, { acc: 1 }); return sv(70 + n * cw + 80, total ? 96 : 60, s, `Bar model: ${a} parts ${la} and ${b} parts ${lb}`); }
+  /* speedometer / road journey */
+  function journey(a, b, lab) { let s = ARR + Rc(10, 40, 400, 30, { fill: C.gry, rx: 6 }) + Ln(20, 55, 400, 55, { w: 2, dash: 1, col: '#fff' }) + T(30, 30, a, { sm: 1, a: 'start' }) + T(400, 30, b, { sm: 1, a: 'end' }) + `<text x="70" y="64" text-anchor="middle" style="font-size:30px">🚐</text>` + T(210, 96, lab, { acc: 1 }); return sv(420, 104, s, `Journey from ${a} to ${b}: ${lab}`); }
+  /* exchange board */
+  function rateBoard(rows) { let s = Rc(6, 6, 260, 40 + rows.length * 32, { fill: '#1d1d2b', rx: 10 }) + `<text x="136" y="32" text-anchor="middle" style="font:700 15px var(--font)" fill="#FFD27A">EXCHANGE RATES</text>`; rows.forEach(([a, b], i) => { s += `<text x="24" y="${64 + i * 32}" style="font:700 17px var(--font)" fill="#fff">${a}</text><text x="248" y="${64 + i * 32}" text-anchor="end" style="font:700 17px ui-monospace,monospace" fill="#5CF2A0">${b}</text>`; }); return sv(272, 52 + rows.length * 32, s, 'Exchange rates: ' + rows.map(r => r.join(' = ')).join(', ')); }
+  /* symmetry: shape with candidate dashed line */
+  const sym = (name, lines) => shape2(name, { lines });
+
+  return { sv, T, Ln, Rc, Ci, PL, C, money, coin, tags, receipt, things, nline, blocks, pvChart, array, plates, boxes, track, fbar, fcircle, fshapes, hundred, ruler, scale, thermo, balance, calendar, shape2, shapeRow, solids, angle, lineAngles, net, map, tallyChart, picto, scatter, dice, bag, spinner, probScale, sqgrid, bottles, circ, patio, table, diceGrid, houseViews, plank, cuboid, cylinder, statement, clock, digital, strip, payslip, tri, quad, pie, bar, line, grid, compass, jug, row, recipe, ratioBar, journey, rateBoard, sym };
+})();
+
+/* =========================================================
+   FUNCTIONAL SKILLS PRACTICE, REBUILT TO MATCH EACH LESSON
+   Every unit's practice covers each key fact in its lesson,
+   in the same order, and uses pictures wherever they help.
+   Part 1: Entry Levels 1–3
+   ========================================================= */
+function FSET(id, o) {
+  const u = FS_UNITS.find(x => x.id === id), L = FSX_LEVELS.find(l => l.id === u.fsl), LS = LESSONS[id];
+  if (o.gens) u.v = o.gens.map(f => ({ g: L.g, f }));
+  if (o.fig) LS.fig = o.fig;
+  if (o.exfig) LS.ex = Object.assign({}, LS.ex, { fig: o.exfig });
+  if (o.learn) u.learn = o.learn;
+}
+const ABC = ['A', 'B', 'C', 'D'];
+const EMO = ['🍎', '⭐', '⚽', '🐟', '🌼', '🍪', '🚗', '🎈'];
+const EMN = { '🍎': 'apples', '⭐': 'stars', '⚽': 'balls', '🐟': 'fish', '🌼': 'flowers', '🍪': 'cookies', '🚗': 'cars', '🎈': 'balloons' };
+const SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const penceAlts = p => [String(p), `${p}p`, `${p} p`, `${p} pence`];
+/* column sum layout */
+function colsum(a, b, op) { const w = Math.max(String(a).length, String(b).length); let s = ''; const cw = 30, x0 = 60; String(a).padStart(w, ' ').split('').forEach((d, i) => { s += FV.T(x0 + i * cw, 40, d.trim(), { fs: 26 }); }); String(b).padStart(w, ' ').split('').forEach((d, i) => { s += FV.T(x0 + i * cw, 80, d.trim(), { fs: 26 }); }); s += FV.T(x0 - 34, 80, op, { fs: 26 }) + FV.Ln(x0 - 40, 94, x0 + w * cw - 10, 94, { w: 2.5 }) + FV.Ln(x0 - 40, 140, x0 + w * cw - 10, 140, { w: 2.5 }); ['H', 'T', 'O'].slice(3 - w).forEach((c, i) => { s += FV.T(x0 + i * cw, 14, c, { sm: 1, acc: 1 }); }); return FV.sv(x0 + w * cw + 10, 150, s, `Column ${op === '+' ? 'addition' : 'subtraction'} of ${a} and ${b}`); }
+/* labelled row of mixed 2D/3D pictures */
+function labelled(items) { let s = ''; items.forEach(([k, n], i) => { s += `<g transform="translate(${i * 160},0)">${k === '3d' ? FV.solids([n]).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '') : FV.shape2(n, { raw: 1 })}${FV.T(75, 172, ABC[i], { acc: 1 })}</g>`; }); return FV.sv(items.length * 160, 182, s, 'Shapes labelled ' + ABC.slice(0, items.length).join(', ')); }
+/* two pencils / ribbons for comparing length */
+function lengths(a, b, la = 'A', lb = 'B') { const u = 22; let s = ''; [[a, la, '#FFD27A'], [b, lb, '#9AD8C4']].forEach(([n, l, c], i) => { const y = 14 + i * 56; s += `<path d="M40,${y} h${n * u - 24} l24,14 l-24,14 h-${n * u - 24} z" fill="${c}" stroke="currentColor" stroke-width="2.5"/>` + FV.T(22, y + 20, l, { acc: 1 }); }); return FV.sv(Math.max(a, b) * u + 60, 128, s, `Two pencils, ${la} and ${lb}`); }
+/* a box and a cat in a position */
+function position(where) { const box = FV.Rc(110, 90, 120, 80, { fill: FV.C.yel, rx: 6 }) + FV.T(170, 136, 'BOX', { sm: 1 }); const pos = { on: [170, 82], under: [170, 210], 'next to': [290, 160], behind: [205, 98] }[where]; const cat = `<text x="${pos[0]}" y="${pos[1]}" text-anchor="middle" style="font-size:44px">🐈</text>`; return FV.sv(340, 225, (where === 'behind' ? cat + box : box + cat) + FV.Ln(20, 172, 320, 172, { w: 2 }), 'A cat and a box'); }
+
+/* ======================== ENTRY LEVEL 1 ======================== */
+FSET('fs-e1-num', {
+  fig: FV.nline(0, 20, 1), exfig: FV.nline(10, 20, 1, { dot: [14, 17] }),
+  gens: [
+    () => { const e = P(EMO), n = R(3, 20); return Q({ text: `How many ${EMN[e]} are there?`, svg: FV.things(e, n, { per: 5 }), answer: n, hint: 'Touch each one once as you count. Count in fives along each row.', steps: [`Rows of 5: ${Math.floor(n / 5)} full row${Math.floor(n / 5) === 1 ? '' : 's'} and ${n % 5} more`, `<b>${n}</b>`] }); },
+    () => { const s = R(0, 10), b = R(s + 1, s + 9); return Q({ text: 'What number goes in the box?', svg: FV.nline(s, s + 10, 1, { box: b }), answer: b, hint: 'Count along the line from the number before the box.', steps: [`${b - 1} comes just before the box`, `<b>${b}</b>`] }); },
+    () => { const [a, b] = pick2([...Array(21).keys()]); const big = Math.max(a, b); return Q({ text: `Which number is bigger: ${a} or ${b}? Use the number line.`, svg: FV.nline(0, 20, 1, { dot: [a, b] }), answer: big, hint: 'The number further to the right is bigger.', steps: [`${big} is further along the line`, `Bigger: <b>${big}</b>`] }); },
+    () => { const s = shuffle([...Array(21).keys()]).slice(0, 4); return TXQ({ text: `Put these numbers in order, smallest first: ${s.join(', ')}`, svg: FV.nline(0, 20, 1, { dot: s }), hint: 'Read the dots from left to right.', steps: [`<b>${s.slice().sort((a, b) => a - b).join(', ')}</b>`] }, [s.slice().sort((a, b) => a - b).join(', '), s.slice().sort((a, b) => a - b).join(' ')]); },
+    () => { const n = R(2, 19), less = Math.random() < .5; return Q({ text: `What is one ${less ? 'less' : 'more'} than ${n}?`, svg: FV.nline(Math.max(0, n - 5), Math.max(0, n - 5) + 10, 1, { dot: [n] }), answer: less ? n - 1 : n + 1, hint: less ? 'Move one step left.' : 'Move one step right.', steps: [`<b>${less ? n - 1 : n + 1}</b>`] }); }] });
+
+FSET('fs-e1-addsub', {
+  fig: FV.things('🍎', 0, { groups: [3, 2] }), exfig: FV.things('🍬', 8, { cross: 3, per: 8 }),
+  gens: [
+    () => { const e = P(EMO), a = R(1, 9), b = R(1, 9); return Q({ text: `How many ${EMN[e]} are there altogether?`, svg: FV.things(e, 0, { groups: [a, b] }), answer: a + b, hint: `Start at ${Math.max(a, b)} and count on ${Math.min(a, b)}.`, steps: [`${a} + ${b}`, `<b>${a + b}</b>`] }); },
+    () => { const e = P(['🍪', '🍬', '🎈', '🍎']), n = R(5, 15), c = R(1, n - 2); return Q({ text: `There were ${n} ${EMN[e] || 'sweets'}. ${c} have gone (crossed out). How many are left?`, svg: FV.things(e, n, { cross: c, per: n > 10 ? 8 : 5 }), answer: n - c, hint: 'Count the ones that are not crossed out.', steps: [`${n} − ${c}`, `<b>${n - c}</b>`] }); },
+    () => { const a = R(2, 10), b = R(2, 9); return Q({ text: `Start at ${a}. Jump on ${b}. Where do you land?`, svg: FV.nline(0, 20, 1, { dot: [a], jumps: [[a, a + b, '+' + b]] }), answer: a + b, hint: 'Count on, one step at a time.', steps: [`${a} + ${b} = <b>${a + b}</b>`] }); },
+    () => { const a = R(12, 20), b = R(2, 9); return Q({ text: `Start at ${a}. Jump back ${b}. Where do you land?`, svg: FV.nline(0, 20, 1, { dot: [a], jumps: [[a, a - b, '−' + b]] }), answer: a - b, hint: 'Count back, one step at a time.', steps: [`${a} − ${b} = <b>${a - b}</b>`] }); },
+    () => { const a = R(2, 10), b = R(1, 9), add = Math.random() < .5; const res = add ? a + b : a + b, l = add ? a + b : a + b; return MCQ({ text: add ? `Which sign makes this true?<br><b>${a} ? ${b} = ${a + b}</b>` : `Which sign makes this true?<br><b>${a + b} ? ${b} = ${a}</b>`, hint: 'Did the number get bigger or smaller?', steps: [add ? `${a} + ${b} = ${a + b}: <b>+</b>` : `${a + b} − ${b} = ${a}: <b>−</b>`] }, add ? '+' : '−', [add ? '−' : '+', '=']); }] });
+
+const E1COINS = ['1p', '2p', '5p', '10p'];
+FSET('fs-e1-money', {
+  fig: FV.money(['£20', '£10', '£5', '£2', '£1', '50p', '20p', '10p', '5p', '2p', '1p'], 'All the UK coins and notes'), exfig: FV.money(['10p', '5p']),
+  gens: [
+    () => { let c, t; do { c = Array.from({ length: R(2, 4) }, () => P(E1COINS)); t = c.reduce((a, v) => a + parseInt(v), 0); } while (t > 20); c.sort((a, b) => parseInt(b) - parseInt(a)); return TXQ({ text: 'How much money is this altogether?', svg: FV.money(c), hint: 'Start with the biggest coin and count on.', steps: [c.join(' + ') + ` = <b>${t}p</b>`] }, penceAlts(t)); },
+    () => { let c, t; do { c = [P(['£5', '£10']), ...(Math.random() < .6 ? [P(['£5', '£10'])] : []), ...Array.from({ length: R(0, 2) }, () => P(['£1', '£2']))]; t = c.reduce((a, v) => a + parseInt(v.slice(1)), 0); } while (t > 20); return Q({ text: 'How much money is this altogether? (in pounds)', svg: FV.money(c), answer: t, pre: '£', hint: 'Add the notes, then the coins.', steps: [c.join(' + ') + ` = <b>£${t}</b>`] }); },
+    () => { const c = shuffle(['1p', '2p', '5p', '10p', '20p', '50p', '£1', '£2']).slice(0, 3); const best = c.slice().sort((a, b) => (b.startsWith('£') ? 100 * +b.slice(1) : parseInt(b)) - (a.startsWith('£') ? 100 * +a.slice(1) : parseInt(a)))[0]; return MCQ({ text: 'Which coin is worth the most?', svg: FV.money(c), hint: '£1 is the same as 100p.', steps: [`<b>${best}</b>`] }, best, c.filter(x => x !== best)); },
+    () => { const [a, b] = pick2([['✏️', 'pencil'], ['🍬', 'sweet'], ['🧽', 'rubber'], ['📎', 'clip'], ['🍭', 'lolly']]), pa = R(2, 9), pb = R(2, 9); return TXQ({ text: `How much do the ${a[1]} and the ${b[1]} cost altogether?`, svg: FV.tags([[a[0], a[1], pa + 'p'], [b[0], b[1], pb + 'p']]), hint: 'Add the two prices.', steps: [`${pa}p + ${pb}p = <b>${pa + pb}p</b>`] }, penceAlts(pa + pb)); },
+    () => { const p = R(5, 19); let c, t; do { c = Array.from({ length: R(2, 3) }, () => P(['1p', '2p', '5p', '10p'])); t = c.reduce((a, v) => a + parseInt(v), 0); } while (t === p || t > 20); return MCQ({ text: `A toy car costs ${p}p. Here is Sam's money. Does Sam have enough?`, svg: FV.money(c), hint: 'Add up the coins and compare with the price.', steps: [`Sam has ${t}p`, t > p ? `${t}p is more than ${p}p: <b>Yes</b>` : `${t}p is less than ${p}p: <b>No</b>`] }, t > p ? 'Yes' : 'No', [t > p ? 'No' : 'Yes']); }] });
+
+FSET('fs-e1-time', {
+  fig: FV.clock(3, 0), exfig: FV.strip(SHORT, 4, 70),
+  gens: [
+    () => { const h = R(1, 12); return TXQ({ text: 'What time does the clock show?', svg: FV.clock(h, 0), hint: 'The long hand is on 12, so it is o’clock. Read the short hand.', steps: [`Short hand on ${h}, long hand on 12`, `<b>${h} o’clock</b>`] }, [`${h} o’clock`, `${h} o'clock`, `${h}`, `${h}:00`, `${h} oclock`]); },
+    () => { const i = R(0, 6), s = SHORT.slice(); s[i] = '?'; return TXQ({ text: 'Which day is missing?', svg: FV.strip(s, -1, 70), hint: 'Say the days of the week in order.', steps: [`<b>${DAYS7[i]}</b>`] }, [DAYS7[i], SHORT[i], DAYS7[i].toLowerCase()]); },
+    () => { const i = R(0, 10); return TXQ({ text: `What month comes after ${MONTHS[i]}?`, svg: FV.strip(MONTHS.slice(Math.min(i, 8), Math.min(i, 8) + 4).map((m, k) => Math.min(i, 8) + k === i + 1 ? '?' : m.slice(0, 3)), -1, 80), hint: 'Say the months in order.', steps: [`<b>${MONTHS[i + 1]}</b>`] }, [MONTHS[i + 1], MONTHS[i + 1].slice(0, 3)]); },
+    () => { const S = ['Spring', 'Summer', 'Autumn', 'Winter'], i = R(0, 3); return MCQ({ text: `Which season comes after ${S[i]}?`, svg: FV.strip(['🌸 Spring', '☀️ Summer', '🍂 Autumn', '❄️ Winter'], i, 120), hint: 'The seasons go round: spring, summer, autumn, winter.', steps: [`<b>${S[(i + 1) % 4]}</b>`] }, S[(i + 1) % 4], S.filter((_, k) => k !== (i + 1) % 4)); },
+    () => { const x = P([['eat breakfast', 'Morning'], ['eat lunch', 'Afternoon'], ['go to bed', 'Night'], ['eat dinner', 'Evening']]); return MCQ({ text: `When do most people ${x[0]}?`, svg: FV.strip(['🌅 Morning', '🌞 Afternoon', '🌆 Evening', '🌙 Night'], -1, 130), hint: 'Think about your own day.', steps: [`<b>${x[1]}</b>`] }, x[1], ['Morning', 'Afternoon', 'Evening', 'Night'].filter(v => v !== x[1])); }] });
+
+FSET('fs-e1-shape', {
+  fig: FV.shapeRow(['circle', 'triangle', 'square', 'rectangle'], ['circle', 'triangle', 'square', 'rectangle']), exfig: FV.shape2('triangle'),
+  gens: [
+    () => { const n = P(['circle', 'triangle', 'square', 'rectangle']); return MCQ({ text: 'What is this shape called?', svg: FV.shape2(n), hint: 'Count the sides and corners.', steps: [{ circle: 'One curved side, no corners', triangle: '3 sides, 3 corners', square: '4 equal sides', rectangle: '4 sides, 2 long and 2 short' }[n], `<b>${n}</b>`] }, n, ['circle', 'triangle', 'square', 'rectangle'].filter(x => x !== n)); },
+    () => { const k = R(0, 2), items = [0, 1, 2].map(i => i === k ? ['3d', P(['cube', 'cylinder', 'sphere'])] : ['2d', P(['circle', 'square', 'triangle'])]); return MCQ({ text: 'Which shape is a 3D (solid) shape?', svg: labelled(items), hint: 'A solid shape is not flat: you could pick it up.', steps: [`<b>${ABC[k]}</b> is a ${items[k][1]}`] }, ABC[k], ABC.slice(0, 3).filter((_, i) => i !== k)); },
+    () => { let a, b; do { a = R(4, 14); b = R(4, 14); } while (a === b); const long = Math.random() < .5, ans = long ? (a > b ? 'A' : 'B') : (a < b ? 'A' : 'B'); return MCQ({ text: `Which pencil is ${long ? 'longer' : 'shorter'}?`, svg: lengths(a, b), hint: 'Both start at the same place. Look at where they end.', steps: [`<b>${ans}</b>`] }, ans, [ans === 'A' ? 'B' : 'A', 'They are the same']); },
+    () => { const pr = P([['🍉', 'melon', '🍒', 'cherry'], ['🎃', 'pumpkin', '🍓', 'strawberry'], ['🧱', 'brick', '🪶', 'feather']]), left = Math.random() < .5, heavy = left ? pr[1] : pr[3]; return MCQ({ text: 'Which is heavier?', svg: left ? FV.balance(pr[1], pr[3], pr[0], pr[2], 2, 1) : FV.balance(pr[3], pr[1], pr[2], pr[0], 2, 1), hint: 'The heavier side goes down.', steps: [`The ${heavy} side is lower: <b>the ${heavy}</b>`] }, `the ${heavy}`, [`the ${heavy === pr[1] ? pr[3] : pr[1]}`, 'They weigh the same']); },
+    () => { const w = P(['on', 'under', 'next to']); return MCQ({ text: 'Where is the cat?', svg: position(w), hint: 'Look at the cat, then at the box.', steps: [`The cat is <b>${w}</b> the box`] }, `${w} the box`, ['on', 'under', 'next to'].filter(x => x !== w).map(x => x + ' the box')); }] });
+
+FSET('fs-e1-data', {
+  fig: FV.tallyChart([['Apples', 4], ['Bananas', 7], ['Pears', 2]]),
+  gens: [
+    () => { const n = R(3, 15); return Q({ text: 'How many does this tally show?', svg: FV.sv(n >= 10 ? 180 : 140, 48, `<g transform="translate(8,2)">${FV.tallyChart([['', n]]).match(/<g transform="translate\(150[^"]*">([\s\S]*?)<\/g>/)[1]}</g>`, 'Tally of ' + n), answer: n, hint: 'Each gate (with a line across) is 5. Count in fives, then count on.', steps: [`${Math.floor(n / 5)} fives = ${5 * Math.floor(n / 5)}, plus ${n % 5}`, `<b>${n}</b>`] }); },
+    () => { const it = shuffle([['Milk', R(1, 3)], ['Bread', R(1, 3)], ['Eggs', R(2, 4)], ['Tea', R(2, 5)], ['Jam', R(2, 4)]]).slice(0, 4), k = R(0, 3); return Q({ text: `Here is a shopping list with prices. How much does the ${it[k][0].toLowerCase()} cost? (in £)`, svg: FV.receipt(it.map(([a, b]) => [a, '£' + b]), { title: 'SHOPPING LIST' }), answer: it[k][1], pre: '£', hint: 'Find the word in the list, then read across.', steps: [`${it[k][0]}: <b>£${it[k][1]}</b>`] }); },
+    () => { const cats = ['Red', 'Blue', 'Green', 'Black'], vals = cats.map(() => R(1, 8)), k = R(0, 3); return Q({ text: `The block graph shows the colours of cars in a car park. How many cars are ${cats[k].toLowerCase()}?`, svg: FV.bar(cats, vals, { ymax: 8, step: 1, yl: 'Cars' }), answer: vals[k], hint: 'Find the bar, then read across to the numbers.', steps: [`<b>${vals[k]}</b>`] }); },
+    () => { const F = ['🍎', '🍌', '🍇', '🍓', '🍐'], V = ['🥕', '🥦', '🌽', '🥔', '🧅'], f = R(2, 5), v = R(2, 5), all = shuffle([...Array(f)].map(() => P(F)).concat([...Array(v)].map(() => P(V)))); const ask = Math.random() < .5; return Q({ text: `Sort these into fruit and vegetables. How many are ${ask ? 'fruit' : 'vegetables'}?`, svg: FV.sv(all.length * 46 + 16, 60, all.map((e, i) => `<text x="${30 + i * 46}" y="44" text-anchor="middle" style="font-size:34px">${e}</text>`).join(''), 'Fruit and vegetables'), answer: ask ? f : v, hint: 'Fruit is sweet and has seeds. Count one group.', steps: [`Fruit: ${f}, vegetables: ${v}`, `<b>${ask ? f : v}</b>`] }); },
+    () => { const rows = [['Cats', R(1, 6)], ['Dogs', R(1, 6)], ['Fish', R(1, 6)]], k = R(0, 2); return Q({ text: `The pictogram shows pets owned by a group. How many people have ${rows[k][0].toLowerCase()}?`, svg: FV.picto(rows, '🙂', '1 person'), answer: rows[k][1], hint: 'Count the faces in that row.', steps: [`<b>${rows[k][1]}</b>`] }); }] });
+LESSONS['fs-e1-data'].ex.fig = FV.sv(140, 48, `<g transform="translate(8,2)">${FV.tallyChart([['', 8]]).match(/<g transform="translate\(150[^"]*">([\s\S]*?)<\/g>/)[1]}</g>`, 'Tally of 8');
+
+/* ======================== ENTRY LEVEL 2 ======================== */
+FSET('fs-e2-num', {
+  fig: FV.blocks(1, 5, 7), exfig: FV.nline(90, 140, 10, { dot: [99, 123, 132], minor: 1 }),
+  gens: [
+    () => { const h = R(0, 1), t = R(1, 9), o = R(0, 9), n = 100 * h + 10 * t + o; return Q({ text: 'What number do the blocks show?', svg: FV.blocks(h, t, o), answer: n, hint: 'Big squares are hundreds, sticks are tens, small cubes are ones.', steps: [`${h} hundred, ${t} tens, ${o} ones`, `<b>${n}</b>`] }); },
+    () => { const a = R(100, 199), pos = R(0, 2), d = String(a)[pos], v = +d * [100, 10, 1][pos]; return Q({ text: `What is the value of the <b>${d}</b> ${pos === 0 ? 'at the start of' : pos === 1 ? 'in the middle of' : 'at the end of'} ${a}?`, svg: FV.pvChart(String(a).split(''), ['H', 'T', 'O']), answer: v, hint: 'Which column is it in: hundreds, tens or ones?', steps: [`The ${d} is in the ${['hundreds', 'tens', 'ones'][pos]} column`, `<b>${v}</b>`] }); },
+    () => { const n = R(2, 9) * 2 + (Math.random() < .5 ? 1 : 0); return MCQ({ text: `Is ${n} odd or even? Pair up the counters.`, svg: FV.array(2, Math.ceil(n / 2)).replace(/<circle(?![\s\S]*<circle)[^>]*\/>/, n % 2 ? '' : '$&'), hint: 'Even numbers make pairs with none left over.', steps: [n % 2 ? `One counter has no partner: <b>Odd</b>` : `Every counter has a partner: <b>Even</b>`] }, n % 2 ? 'Odd' : 'Even', [n % 2 ? 'Even' : 'Odd']); },
+    () => { const s = shuffle([R(20, 60), R(61, 120), R(121, 160), R(161, 200)]); return TXQ({ text: `Put these in order, smallest first: ${s.join(', ')}`, svg: FV.nline(0, 200, 20, { dot: s, minor: 10, every: 1 }), hint: 'Compare the hundreds first, then the tens.', steps: [`<b>${s.slice().sort((a, b) => a - b).join(', ')}</b>`] }, [s.slice().sort((a, b) => a - b).join(', '), s.slice().sort((a, b) => a - b).join(' ')]); },
+    () => { const n = R(4, 30) * 2, odd = Math.random() < .5; return Q({ text: `What is the next ${odd ? 'odd' : 'even'} number after ${n}?`, svg: FV.track([n, n + 1, n + 2, n + 3].map(v => v === (odd ? n + 1 : n + 2) ? '?' : v)), answer: odd ? n + 1 : n + 2, hint: odd ? 'Odd numbers end in 1, 3, 5, 7 or 9.' : 'Even numbers go up in twos.', steps: [`<b>${odd ? n + 1 : n + 2}</b>`] }); }] });
+
+FSET('fs-e2-addsub', {
+  fig: FV.nline(30, 50, 10, { minor: 1, arrowAt: [[38, '38']], jumps: [[38, 40, 'nearest 10']] }), exfig: FV.blocks(0, 8, 15),
+  gens: [
+    () => { const a = R(11, 59), b = R(11, 39); return Q({ text: `${a} + ${b} = ?`, svg: FV.row(FV.blocks(0, Math.floor(a / 10), a % 10), FV.blocks(0, Math.floor(b / 10), b % 10)), answer: a + b, hint: 'Add the ones, then the tens. 10 ones make a new ten.', steps: [`Ones: ${a % 10} + ${b % 10} = ${a % 10 + b % 10}`, `Tens: ${Math.floor(a / 10) * 10} + ${Math.floor(b / 10) * 10}`, `<b>${a + b}</b>`] }); },
+    () => { const a = R(40, 99), b = R(11, a - 10); return Q({ text: `${a} − ${b} = ?`, svg: FV.nline(Math.floor((a - b) / 10) * 10, Math.ceil(a / 10) * 10, 10, { minor: 5, jumps: [[a, a - b, '−' + b]], dot: [a] }), answer: a - b, hint: 'Take away the tens, then the ones.', steps: [`${a} − ${Math.floor(b / 10) * 10} = ${a - Math.floor(b / 10) * 10}`, `− ${b % 10} = <b>${a - b}</b>`] }); },
+    () => { let n; do { n = R(11, 99); } while (n % 10 === 5 || n % 10 === 0); const lo = Math.floor(n / 10) * 10, r = Math.round(n / 10) * 10; return Q({ text: `Round ${n} to the nearest 10.`, svg: FV.nline(lo, lo + 10, 10, { minor: 1, arrowAt: [[n, String(n)]] }), answer: r, hint: `Is ${n} nearer to ${lo} or ${lo + 10}?`, steps: [`${n} is nearer to <b>${r}</b>`] }); },
+    () => { const [a, b] = pick2([['🥫', 'beans'], ['🍞', 'bread'], ['🥛', 'milk'], ['🧃', 'juice']]), x = R(12, 60), y = R(12, 39); return Q({ text: `A shop has ${x} tins of ${a[1]} and ${y} tins of ${b[1]}. How many tins altogether?`, svg: FV.tags([[a[0], a[1], `${x} tins`], [b[0], b[1], `${y} tins`]]), answer: x + y, hint: '“Altogether” means add.', steps: [`${x} + ${y} = <b>${x + y}</b>`] }); },
+    () => { const s = R(40, 80), p = R(11, s - 5); return Q({ text: `A bus has ${s} seats. ${p} people are sitting down. How many seats are empty?`, svg: FV.sv(260, 90, `<text x="130" y="70" text-anchor="middle" style="font-size:72px">🚌</text>`, 'Bus'), answer: s - p, hint: 'Take the people away from the seats.', steps: [`${s} − ${p} = <b>${s - p}</b>`] }); }] });
+
+FSET('fs-e2-muldiv', {
+  fig: FV.array(4, 6), exfig: FV.plates(4, 7, '🍪', 1),
+  gens: [
+    () => { const r = R(2, 5), c = R(2, 10); return Q({ text: `There are ${r} rows of ${c}. How many altogether?`, svg: FV.array(r, c), answer: r * c, hint: `Count in ${c}s: ${[...Array(r)].map((_, i) => c * (i + 1)).join(', ')}.`, steps: [`${r} × ${c} = <b>${r * c}</b>`] }); },
+    () => { const k = R(2, 4), e = R(2, 5); return Q({ text: `${k * e} cookies are shared equally between ${k} plates. How many on each plate?`, svg: FV.plates(k, e), answer: e, hint: 'Share them out one at a time.', steps: [`${k * e} ÷ ${k} = <b>${e}</b>`] }); },
+    () => { const b = P([2, 3, 4, 5]), q = R(2, 5), r = R(1, b - 1), n = b * q + r; return TXQ({ text: `${n} cookies are shared between ${b} plates. How many on each plate, and how many are left over? Write it like <b>3 r 1</b>.`, svg: FV.plates(b, q, '🍪', r), hint: 'Share them out. The ones that cannot be shared are the remainder.', steps: [`${b} × ${q} = ${b * q}`, `${n} − ${b * q} = ${r} left over`, `<b>${q} r ${r}</b>`] }, [`${q} r ${r}`, `${q}r${r}`, `${q} remainder ${r}`, `${q} rem ${r}`]); },
+    () => { const k = P([2, 5, 10, 6]), n = R(2, 5); return Q({ text: `Eggs come in boxes of ${k}. How many eggs are in ${n} boxes?`, svg: FV.boxes(n, k), answer: n * k, hint: `Count in ${k}s.`, steps: [`${n} × ${k} = <b>${n * k}</b>`] }); },
+    () => { const t = P([2, 5, 10]), n = R(2, 12); return Q({ text: `${n} × ${t} = ?`, svg: FV.nline(0, t * 12, t, { jumps: [...Array(n)].map((_, i) => [i * t, (i + 1) * t, '']), every: t === 2 ? 2 : 1 }), answer: n * t, hint: `Count in ${t}s, ${n} times.`, steps: [`<b>${n * t}</b>`] }); }] });
+
+FSET('fs-e2-frac', {
+  fig: FV.fshapes([[1, 2, 'circle', '½'], [1, 4, 'circle', '¼'], [1, 10, 'bar', '1 tenth']]), exfig: FV.fbar(1, 4, { total: '20', lab: '5' }),
+  gens: [
+    () => { const x = P([[1, 2, '1/2', 'half'], [1, 4, '1/4', 'quarter'], [3, 4, '3/4', 'three quarters'], [2, 4, '2/4', 'half']]); const t = Math.random() < .5 ? 'circle' : 'bar'; return MCQ({ text: 'What fraction is shaded?', svg: t === 'circle' ? FV.fcircle(x[0], x[1]) : FV.fbar(x[0], x[1]), hint: 'Count the equal parts, then the shaded parts.', steps: [`${x[0]} out of ${x[1]} equal parts`, `<b>${x[3]}</b>`] }, x[3], ['half', 'quarter', 'three quarters', 'one tenth'].filter(v => v !== x[3]).slice(0, 3)); },
+    () => { const n = R(2, 10) * 2, e = P(['🍎', '🍪', '⭐']); return Q({ text: `What is half of ${n}?`, svg: FV.fbar(1, 2, { total: n, lab: '?' }), answer: n / 2, hint: 'Share into 2 equal groups.', steps: [`${n} ÷ 2 = <b>${n / 2}</b>`] }); },
+    () => { const n = R(2, 10) * 4; return Q({ text: `What is a quarter of ${n}?`, svg: FV.fbar(1, 4, { total: n, lab: '?' }), answer: n / 4, hint: 'Share into 4 equal groups. Halve, then halve again.', steps: [`${n} ÷ 4 = <b>${n / 4}</b>`] }); },
+    () => { const n = R(1, 9) * 10; return Q({ text: `What is one tenth of ${n}?`, svg: FV.fbar(1, 10, { total: n, w: 400 }), answer: n / 10, hint: 'Share into 10 equal parts.', steps: [`${n} ÷ 10 = <b>${n / 10}</b>`] }); },
+    () => { const w = R(0, 2), t = R(1, 9), v = rnd(w + t / 10, 1); return Q({ text: 'What decimal is the arrow pointing to?', svg: FV.nline(w, w + 1, 0.1, { every: 10, minor: 0.1, arrowAt: [[v, '↓']] }), answer: v, hint: 'Each small step is one tenth: 0.1.', steps: [`${w} and ${t} tenths = <b>${fmt(v)}</b>`] }); }] });
+
+FSET('fs-e2-money', {
+  fig: FV.money(['£1', '50p', '20p', '20p', '10p'], '£1 is the same as 100p'), exfig: FV.tags([['🍏', 'apple', '20p'], ['🍏', 'apple', '20p'], ['🍏', 'apple', '20p'], ['🍏', 'apple', '20p']]),
+  gens: [
+    () => { let c, t; do { c = Array.from({ length: R(3, 5) }, () => P(['50p', '20p', '10p', '5p', '2p', '1p'])); t = c.reduce((a, v) => a + parseInt(v), 0); } while (t > 100); c.sort((a, b) => parseInt(b) - parseInt(a)); return TXQ({ text: 'How much money is this altogether? (in pence)', svg: FV.money(c), hint: 'Start with the biggest coin and count on.', steps: [c.join(' + ') + ` = <b>${t}p</b>`] }, penceAlts(t)); },
+    () => { const [e, n] = P([['✏️', 'pencil'], ['🍌', 'banana'], ['🧁', 'cake']]), p = P([10, 15, 20, 25]), k = R(2, 4); return TXQ({ text: `A ${n} costs ${p}p. How much do ${k} cost?`, svg: FV.tags([...Array(k)].map(() => [e, n, p + 'p'])), hint: 'Multiply, or add the price again and again.', steps: [`${k} × ${p}p = <b>${k * p}p</b>`] }, penceAlts(k * p)); },
+    () => { const p = R(2, 19), nt = p < 10 ? '£10' : '£20'; return Q({ text: `A book costs £${p}. You pay with this note. How much change do you get?`, svg: FV.row(FV.tags([['📘', 'book', '£' + p]]), FV.money([nt])), answer: +nt.slice(1) - p, pre: '£', hint: `Count on from ${p} to ${nt.slice(1)}.`, steps: [`${nt.slice(1)} − ${p} = <b>£${+nt.slice(1) - p}</b>`] }); },
+    () => { const a = R(12, 49), b = R(12, 49); return TXQ({ text: 'What is the total cost?', svg: FV.tags([['🥤', 'drink', a + 'p'], ['🥨', 'crisps', b + 'p']]), hint: 'Add the tens, then the ones.', steps: [`${a}p + ${b}p = <b>${a + b}p</b>`] }, penceAlts(a + b)); },
+    () => { const p = P([35, 45, 55, 65, 75, 85, 15, 25]); return TXQ({ text: `You buy a sticker for ${p}p and pay with a £1 coin. How much change?`, svg: FV.row(FV.tags([['⭐', 'sticker', p + 'p']]), FV.money(['£1'])), hint: '£1 = 100p. Count on to 100.', steps: [`100p − ${p}p = <b>${100 - p}p</b>`] }, penceAlts(100 - p)); }] });
+
+FSET('fs-e2-time', {
+  fig: FV.row(FV.clock(4, 30), FV.clock(4, 15), FV.clock(4, 45)), exfig: FV.digital('17:00'),
+  gens: [
+    () => { const h = R(1, 12), m = P([0, 30]); const w = m ? `half past ${h}` : `${h} o’clock`; return TXQ({ text: 'What time does the clock show?', svg: FV.clock(h, m), hint: m ? 'Long hand on 6 = half past.' : 'Long hand on 12 = o’clock.', steps: [`<b>${w}</b>`] }, m ? [w, `${h}:30`, `half past ${h}`, `${h}.30`] : [w, `${h} o'clock`, `${h}`, `${h}:00`]); },
+    () => { const h = R(1, 12), m = P([15, 45]); const w = m === 15 ? `quarter past ${h}` : `quarter to ${h % 12 + 1}`; return MCQ({ text: 'What time does the clock show?', svg: FV.clock(h, m), hint: 'Long hand on 3 = quarter past. Long hand on 9 = quarter to.', steps: [`<b>${w}</b>`] }, w, m === 15 ? [`quarter to ${h}`, `half past ${h}`] : [`quarter past ${h % 12 + 1}`, `quarter past ${h}`]); },
+    () => { const h = R(13, 23); return TXQ({ text: 'This digital clock uses the 24-hour clock. What time is it in 12-hour time?', svg: FV.digital(`${h}:00`), hint: 'Take away 12. It is after midday, so it is pm.', steps: [`${h} − 12 = ${h - 12}`, `<b>${h - 12} pm</b>`] }, [`${h - 12} pm`, `${h - 12}pm`, `${h - 12}:00 pm`, `${h - 12}:00pm`, `${h - 12}`]); },
+    () => { const q = P([['minutes in an hour', 60], ['hours in a day', 24], ['days in a week', 7], ['months in a year', 12], ['weeks in a year', 52]]); return Q({ text: `How many ${q[0]} are there?`, svg: q[0].includes('minutes') ? FV.clock(12, 0) : q[0].includes('days') ? FV.strip(SHORT, -1, 70) : q[0].includes('months') ? FV.calendar('January', 2, 31) : undefined, answer: q[1], hint: 'This is a fact to learn.', steps: [`<b>${q[1]}</b>`] }); },
+    () => { const st = R(0, 6), d = R(1, 28), mi = R(0, 11), y = 2026; return TXQ({ text: `What is the highlighted date? Write it as dd/mm/yyyy. The calendar is for ${MONTHS[mi]} ${y}.`, svg: FV.calendar(MONTHS[mi] + ' ' + y, st, 30, { mark: [d] }), hint: 'Day / month number / year.', steps: [`${d} ${MONTHS[mi]} ${y}`, `<b>${String(d).padStart(2, '0')}/${String(mi + 1).padStart(2, '0')}/${y}</b>`] }, [`${String(d).padStart(2, '0')}/${String(mi + 1).padStart(2, '0')}/${y}`, `${d}/${mi + 1}/${y}`]); }] });
+
+FSET('fs-e2-measure', {
+  fig: FV.row(FV.ruler(5, 8, {}), FV.jug(200, 500, 100)), exfig: FV.jug(200, 300, 100),
+  gens: [
+    () => { const m = P([200, 300, 400, 500]), st = 100, lv = st * R(1, m / st - 1); return Q({ text: 'How much water is in the jug?', svg: FV.jug(lv, m, st), answer: lv, unit: 'ml', hint: 'Read across from the top of the water.', steps: [`<b>${lv} ml</b>`] }); },
+    () => { const L = R(3, 9); return Q({ text: 'How long is the pencil?', svg: FV.ruler(L, 10), answer: L, unit: 'cm', hint: 'The pencil starts at 0. Read where it ends.', steps: [`<b>${L} cm</b>`] }); },
+    () => { const v = R(1, 9); return Q({ text: 'How much does the bag of potatoes weigh?', svg: FV.scale(v, 10, 1, 'kg'), answer: v, unit: 'kg', hint: 'Read the number the red pointer points to.', steps: [`<b>${v} kg</b>`] }); },
+    () => { const a = R(5, 25), b = R(5, 25); if (a === b) return Q({ text: 'Read the thermometer. What is the temperature?', svg: FV.thermo(a, 0, 30, 5, { sub: 5 }), answer: a, unit: '°C', hint: 'Each small mark is 1 degree.', steps: [`<b>${a} °C</b>`] }); return Q({ text: `It is ${a} °C in Bath and ${b} °C in York. How many degrees warmer is the warmer place?`, svg: FV.row(FV.thermo(a, 0, 30, 5, { sub: 5 }), FV.thermo(b, 0, 30, 5, { sub: 5 })), answer: Math.abs(a - b), unit: '°C', hint: 'Find the difference.', steps: [`${Math.max(a, b)} − ${Math.min(a, b)} = <b>${Math.abs(a - b)} °C</b>`] }); },
+    () => { const x = P([['the length of a pencil', 'cm', ['km', 'kg', 'litres']], ['the weight of a bag of sugar', 'kg', ['cm', 'ml', 'km']], ['the water in a bath', 'litres', ['cm', 'kg', 'g']], ['the distance to London', 'km', ['cm', 'g', 'ml']], ['medicine in a spoon', 'ml', ['km', 'kg', 'm']]]); return MCQ({ text: `Which unit would you use to measure ${x[0]}?`, hint: 'Length: cm, m, km. Weight: g, kg. Liquid: ml, litres.', steps: [`<b>${x[1]}</b>`] }, x[1], x[2]); }] });
+
+FSET('fs-e2-shape', {
+  fig: FV.shapeRow(['pentagon', 'hexagon'], ['pentagon: 5 sides', 'hexagon: 6 sides']), exfig: FV.solids(['cuboid']),
+  gens: [
+    () => { const n = P([['triangle', 3], ['square', 4], ['rectangle', 4], ['pentagon', 5], ['hexagon', 6]]); return Q({ text: 'How many sides does this shape have?', svg: FV.shape2(n[0]), answer: n[1], hint: 'Put your finger on one side and count round.', steps: [`It is a ${n[0]}: <b>${n[1]}</b> sides`] }); },
+    () => { const n = P(['pentagon', 'hexagon', 'rectangle', 'triangle']); return MCQ({ text: 'What is this shape called?', svg: FV.shape2(n), hint: 'Count the sides: 5 = pentagon, 6 = hexagon.', steps: [`<b>${n}</b>`] }, n, ['pentagon', 'hexagon', 'rectangle', 'triangle', 'octagon'].filter(x => x !== n).slice(0, 3)); },
+    () => { const n = P(['cube', 'cuboid', 'cylinder', 'sphere', 'pyramid', 'cone']); return MCQ({ text: 'What is the name of this 3D shape?', svg: FV.solids([n]), hint: 'Look at the faces: flat or curved?', steps: [`<b>${n}</b>`] }, n, ['cube', 'cuboid', 'cylinder', 'sphere', 'pyramid', 'cone'].filter(x => x !== n).slice(0, 3)); },
+    () => { const x = P([['cube', 'faces', 6], ['cuboid', 'faces', 6], ['cube', 'corners (vertices)', 8], ['cuboid', 'edges', 12], ['pyramid', 'faces', 5]]); return Q({ text: `How many ${x[1]} does this ${x[0]} have?`, svg: FV.solids([x[0]]), answer: x[2], hint: x[1] === 'faces' ? 'Faces are the flat surfaces. Remember the ones you cannot see.' : x[1] === 'edges' ? 'Edges are where two faces meet.' : 'Corners are the points.', steps: [`<b>${x[2]}</b>`] }); },
+    () => { const p = shuffle(['🐶', '🐱', '🐰']), i = R(0, 2), q = P(['in the middle', 'on the left', 'on the right']), k = q === 'in the middle' ? 1 : q === 'on the left' ? 0 : 2, names = { '🐶': 'dog', '🐱': 'cat', '🐰': 'rabbit' }; return MCQ({ text: `Which animal is ${q}?`, svg: FV.sv(300, 70, p.map((e, j) => `<text x="${50 + j * 100}" y="52" text-anchor="middle" style="font-size:44px">${e}</text>`).join(''), 'Three animals in a row'), hint: 'Left is the side your left hand is on as you look at the screen.', steps: [`<b>the ${names[p[k]]}</b>`] }, `the ${names[p[k]]}`, p.filter((_, j) => j !== k).map(e => 'the ' + names[e])); }] });
+
+FSET('fs-e2-data', {
+  fig: FV.bar(['Tea', 'Coffee', 'Juice'], [8, 5, 3], { ymax: 10, step: 2, yl: 'Votes' }), exfig: FV.bar(['Tea', 'Coffee'], [8, 5], { ymax: 10, step: 1, yl: 'Votes' }),
+  gens: [
+    () => { const c = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'], v = c.map(() => 2 * R(1, 10)), k = R(0, 4); return Q({ text: `The bar chart shows how many cakes a café sold. How many cakes were sold on ${DAYS7[k]}?`, svg: FV.bar(c, v, { ymax: 20, step: 2, yl: 'Cakes' }), answer: v[k], hint: 'Read across from the top of the bar. Each line is 2.', steps: [`<b>${v[k]}</b>`] }); },
+    () => { const c = ['Car', 'Bus', 'Walk', 'Bike'], v = c.map(() => R(1, 10)); let [i, j] = pick2([0, 1, 2, 3]); if (v[i] === v[j]) v[i]++; if (v[i] < v[j]) [i, j] = [j, i]; return Q({ text: `How many more people ${c[i] === 'Walk' ? 'walk' : 'travel by ' + c[i].toLowerCase()} than ${c[j] === 'Walk' ? 'walk' : 'travel by ' + c[j].toLowerCase()}?`, svg: FV.bar(c, v, { ymax: 12, step: 1, yl: 'People' }), answer: v[i] - v[j], hint: '“How many more” means take away.', steps: [`${v[i]} − ${v[j]} = <b>${v[i] - v[j]}</b>`] }); },
+    () => { const v = [[R(1, 9), R(1, 9)], [R(1, 9), R(1, 9)]], r = R(0, 1), c = R(0, 1); return Q({ text: `The table shows T-shirts in a shop. How many ${['small', 'large'][r]} ${['red', 'blue'][c]} T-shirts are there?${FV.table(['Size', 'Red', 'Blue'], [['Small', ...v[0]], ['Large', ...v[1]]])}`, answer: v[r][c], hint: 'Find the row, then the column.', steps: [`<b>${v[r][c]}</b>`] }); },
+    () => { const rows = [['Pizza', R(2, 8)], ['Pasta', R(2, 8)], ['Salad', R(2, 8)]]; const t = rows.reduce((a, r) => a + r[1], 0); return Q({ text: 'The pictogram shows lunch choices. How many people is that altogether?', svg: FV.picto(rows, '🙂', '1 person'), answer: t, hint: 'Count each row, then add.', steps: [rows.map(r => r[1]).join(' + ') + ` = <b>${t}</b>`] }); },
+    () => { const rows = [['Football', R(1, 6)], ['Swimming', R(1, 6)], ['Tennis', R(1, 6)]], k = R(0, 2); return Q({ text: `In this pictogram each ⚽ stands for 2 people. How many people chose ${rows[k][0].toLowerCase()}?`, svg: FV.picto(rows, '⚽', '2 people'), answer: rows[k][1] * 2, hint: 'Count the symbols, then double.', steps: [`${rows[k][1]} × 2 = <b>${rows[k][1] * 2}</b>`] }); }] });
+
+/* ======================== ENTRY LEVEL 3 ======================== */
+FSET('fs-e3-num', {
+  fig: FV.pvChart(['6', '3', '8'], ['H', 'T', 'O']), exfig: FV.blocks(3, 7, 4),
+  gens: [
+    () => { const a = R(100, 499), b = R(100, 499); return Q({ text: `${a} + ${b} = ?`, svg: colsum(a, b, '+'), answer: a + b, hint: 'Line up hundreds, tens and ones. Start with the ones.', steps: [`Ones: ${a % 10} + ${b % 10}`, `Tens, then hundreds`, `<b>${a + b}</b>`] }); },
+    () => { const a = R(300, 999), b = R(100, a - 50); return Q({ text: `${a} − ${b} = ?`, svg: FV.nline(a - b, a, Math.max(10, Math.round(b / 50) * 10), { every: 2, jumps: [[a, a - b, '−' + b]], dot: [a] }), answer: a - b, hint: 'Take away the hundreds, then the tens, then the ones.', steps: [`<b>${a - b}</b>`] }); },
+    () => { let n; do { n = R(101, 989); } while (n % 50 === 0); const to = P([10, 100]), lo = Math.floor(n / to) * to, r = Math.round(n / to) * to; return Q({ text: `Round ${n} to the nearest ${to}.`, svg: FV.nline(lo, lo + to, to, { minor: to / 10, arrowAt: [[n, String(n)]] }), answer: r, hint: `Is it nearer ${lo} or ${lo + to}?`, steps: [`${n} is nearer <b>${r}</b>`] }); },
+    () => { const s = shuffle([R(100, 299), R(300, 599), R(600, 999), R(10, 99)]); return TXQ({ text: `Write these in order, smallest first: ${s.join(', ')}`, svg: FV.nline(0, 1000, 100, { dot: s, minor: 50 }), hint: 'Compare hundreds first.', steps: [`<b>${s.slice().sort((a, b) => a - b).join(', ')}</b>`] }, [s.slice().sort((a, b) => a - b).join(', '), s.slice().sort((a, b) => a - b).join(' ')]); },
+    () => { const n = R(100, 999), pos = R(0, 2), d = String(n)[pos]; if (d === '0') return Q({ text: `What is ${n} rounded to the nearest 10?`, svg: FV.pvChart(String(n).split(''), ['H', 'T', 'O']), answer: Math.round(n / 10) * 10, hint: 'Look at the ones digit.', steps: [`<b>${Math.round(n / 10) * 10}</b>`] }); return Q({ text: `What is the value of the digit ${d} in ${n}? (${['hundreds', 'tens', 'ones'][pos]} column)`, svg: FV.pvChart(String(n).split(''), ['H', 'T', 'O']), answer: +d * [100, 10, 1][pos], hint: 'Read the column heading.', steps: [`<b>${+d * [100, 10, 1][pos]}</b>`] }); }] });
+
+FSET('fs-e3-muldiv', {
+  fig: FV.array(3, 12), exfig: FV.boxes(4, 6, '🥚'),
+  gens: [
+    () => { const a = R(11, 49), b = P([3, 4, 5, 6, 7, 8]); return Q({ text: `${a} × ${b} = ?`, svg: FV.sv(360, 120, FV.Rc(40, 30, 200, 70, { fill: FV.C.blu }) + FV.Rc(240, 30, 110, 70, { fill: FV.C.yel }) + FV.T(140, 22, Math.floor(a / 10) * 10, { acc: 1 }) + FV.T(295, 22, a % 10, { acc: 1 }) + FV.T(24, 72, b, { acc: 1 }) + FV.T(140, 72, '?', { fs: 20 }) + FV.T(295, 72, '?', { fs: 20 }), 'Grid method'), answer: a * b, hint: `Split ${a} into tens and ones.`, steps: [`${Math.floor(a / 10) * 10} × ${b} = ${Math.floor(a / 10) * 10 * b}`, `${a % 10} × ${b} = ${(a % 10) * b}`, `<b>${a * b}</b>`] }); },
+    () => { const b = P([3, 4, 5, 6, 8, 9]), q = R(12, 99); return Q({ text: `${b * q} ÷ ${b} = ?`, svg: FV.sv(200, 80, `<text x="20" y="54" class="sl" style="font-size:26px">${b}</text><path d="M44,24 h140 M44,24 v42" fill="none" stroke="currentColor" stroke-width="3"/><text x="60" y="56" class="sl" style="font-size:26px">${b * q}</text>`, 'Bus stop division'), answer: q, hint: 'Use the bus stop method. Carry any remainder.', steps: [`<b>${q}</b>`] }); },
+    () => { const c = P([8, 12, 16]), n = R(30, 99), need = Math.ceil(n / c); return Q({ text: `${n} people are going on a trip. Each minibus holds ${c} people. How many minibuses are needed?`, svg: FV.sv(80 * Math.min(need, 7) + 20, 70, [...Array(Math.min(need, 7))].map((_, i) => `<text x="${45 + i * 80}" y="52" text-anchor="middle" style="font-size:44px">🚐</text>`).join(''), 'Minibuses'), answer: need, hint: 'Divide. If there are people left over, you need one more bus.', steps: [`${n} ÷ ${c} = ${Math.floor(n / c)} r ${n % c}`, n % c ? `The ${n % c} left over need a bus too: <b>${need}</b>` : `<b>${need}</b>`] }); },
+    () => { const c = P([6, 12]), n = R(40, 150), full = Math.floor(n / c); return Q({ text: `Eggs are packed in boxes of ${c}. How many full boxes can be made from ${n} eggs?`, svg: FV.boxes(Math.min(full, 4), c, '🥚', 'Egg boxes'), answer: full, hint: 'Divide. Only count full boxes.', steps: [`${n} ÷ ${c} = ${full} r ${n % c}`, `<b>${full}</b> full boxes`] }); },
+    () => { const k = R(3, 9), p = R(12, 30); return Q({ text: `A bag of apples costs ${p}p. How much do ${k} bags cost? (in pence)`, svg: FV.tags([...Array(Math.min(k, 4))].map(() => ['🍎', 'bag', p + 'p'])), answer: k * p, unit: 'p', hint: 'Multiply.', steps: [`${k} × ${p} = <b>${k * p}p</b>`] }); }] });
+
+FSET('fs-e3-seq', {
+  fig: FV.track([3, 7, 11, 15, '?']), exfig: FV.track([85, 78, 71, 64, '?']),
+  gens: [
+    () => { const s = R(2, 30), d = R(3, 12); const v = [0, 1, 2, 3].map(i => s + i * d); return Q({ text: 'What is the next number in the sequence?', svg: FV.track([...v, '?']), answer: s + 4 * d, hint: 'Find the gap between the numbers.', steps: [`The rule is add ${d}`, `${v[3]} + ${d} = <b>${s + 4 * d}</b>`] }); },
+    () => { const s = R(60, 120), d = R(3, 12); const v = [0, 1, 2, 3].map(i => s - i * d); return Q({ text: 'What is the next number in the sequence?', svg: FV.track([...v, '?']), answer: s - 4 * d, hint: 'Is it going up or down? By how much?', steps: [`The rule is subtract ${d}`, `<b>${s - 4 * d}</b>`] }); },
+    () => { const s = R(0, 20) / 10, d = P([0.1, 0.2, 0.5]); const v = [0, 1, 2, 3].map(i => rnd(s + i * d, 1)); return Q({ text: 'What is the next number in the sequence?', svg: FV.track([...v.map(x => fmt(x)), '?']), answer: rnd(s + 4 * d, 1), hint: 'The gap is a decimal.', steps: [`Add ${fmt(d)} each time`, `<b>${fmt(rnd(s + 4 * d, 1))}</b>`] }); },
+    () => { const s = R(2, 20), d = R(3, 9), up = Math.random() < .5, v = [0, 1, 2, 3].map(i => up ? s + i * d : s + 40 - i * d); return MCQ({ text: 'What is the rule for this sequence?', svg: FV.track(v), hint: 'Look at the gap from one number to the next.', steps: [`<b>${up ? 'add' : 'subtract'} ${d}</b>`] }, `${up ? 'add' : 'subtract'} ${d}`, [`${up ? 'subtract' : 'add'} ${d}`, `${up ? 'add' : 'subtract'} ${d + 1}`, `multiply by ${d}`]); },
+    () => { const s = R(2, 15), d = R(2, 6), v = [0, 1, 2, 3, 4].map(i => s + i * d), k = R(1, 3); const t = v.map((x, i) => i === k ? '?' : x); return Q({ text: 'What is the missing number?', svg: FV.track(t), answer: v[k], hint: 'Work out the gap from the numbers either side.', steps: [`The rule is add ${d}`, `<b>${v[k]}</b>`] }); }] });
+
+FSET('fs-e3-frac', {
+  fig: FV.fshapes([[1, 3, 'bar', '1/3'], [2, 5, 'bar', '2/5'], [7, 10, 'circle', '7/10']]), exfig: FV.fbar(3, 5, { total: '40', lab: '8' }),
+  gens: [
+    () => { const d = P([3, 5, 10]), n = R(1, d - 1), t = Math.random() < .5 ? 'bar' : 'circle'; const [a, b] = simp(n, d); return Q({ kind: 'frac', text: 'What fraction is shaded?', svg: t === 'bar' ? FV.fbar(n, d) : FV.fcircle(n, d), answer: [a, b], hint: 'Shaded parts over total equal parts.', steps: [`${n} out of ${d}`, `<b>${n}/${d}</b>`] }); },
+    () => { const d = P([3, 4, 5, 10]), n = R(1, d - 1), k = R(2, 12), w = d * k; return Q({ text: `Work out ${fr(n, d, 1)} of ${w}.`, svg: FV.fbar(n, d, { total: w, lab: k }), answer: n * k, hint: 'Divide by the bottom, multiply by the top.', steps: [`${w} ÷ ${d} = ${k}`, `${k} × ${n} = <b>${n * k}</b>`] }); },
+    () => { const x = P([[1, 2, 0.5], [1, 4, 0.25], [3, 4, 0.75], [1, 10, 0.1], [3, 10, 0.3], [7, 10, 0.7], [1, 5, 0.2]]); return Q({ text: `Write ${x[0]}/${x[1]} as a decimal.`, svg: FV.nline(0, 1, 0.1, { minor: 0.05, every: 5, arrowAt: [[x[2], `${x[0]}/${x[1]}`]] }), answer: x[2], hint: 'Where is it on the line from 0 to 1?', steps: [`${x[0]}/${x[1]} = <b>${fmt(x[2])}</b>`] }); },
+    () => { const d = P([2, 3, 4, 5]), k = P([2, 3]), n = R(1, d - 1); return Q({ text: `Fill the gap: ${fr(n, d, 1)} = <span class="fr"><span>?</span><span>${d * k}</span></span>`, svg: FV.row(FV.fbar(n, d, { w: 240 }), FV.fbar(n * k, d * k, { w: 240 })), answer: n * k, hint: `The bottom was multiplied by ${k}. Do the same to the top.`, steps: [`${n} × ${k} = <b>${n * k}</b>`] }); },
+    () => { let v, pos, d; do { v = R(101, 999) / 100; pos = R(0, 1); d = v.toFixed(2).split('.')[1][pos]; } while (d === '0'); return Q({ text: `In ${v.toFixed(2)}, what is the digit ${d} worth? Give it as a decimal.`, svg: FV.pvChart([String(Math.floor(v)), ...v.toFixed(2).split('.')[1].split('')], ['O', 't', 'h']), answer: +d / (pos ? 100 : 10), hint: 'The first digit after the point is tenths, the second is hundredths.', steps: [`${d} ${pos ? 'hundredths' : 'tenths'} = <b>${fmt(+d / (pos ? 100 : 10))}</b>`] }); }] });
+
+FSET('fs-e3-money', {
+  fig: FV.money(['£2', '£1', '20p', '20p', '5p'], '£3.45'), exfig: FV.receipt([['Sandwich', '£4.75'], ['Drink', '£2.60']], { total: '?' }),
+  gens: [
+    () => { const a = R(101, 899) / 100, b = R(101, 899) / 100; return Q({ text: 'What is the total on the receipt?', svg: FV.receipt([['Sandwich', money(a)], ['Drink', money(b)]], { total: '?' }), answer: rnd(a + b, 2), pre: '£', hint: 'Line up the decimal points and add.', steps: [`${money(a)} + ${money(b)} = <b>${money(a + b)}</b>`] }); },
+    () => { const nt = P(['£5', '£10', '£20']), p = R(100, +nt.slice(1) * 100 - 5) / 100; return Q({ text: 'You buy this and pay with the note. How much change do you get?', svg: FV.row(FV.tags([['🧢', 'cap', money(p)]]), FV.money([nt])), answer: rnd(+nt.slice(1) - p, 2), pre: '£', hint: 'Count on from the price to the note.', steps: [`${nt} − ${money(p)} = <b>${money(+nt.slice(1) - p)}</b>`] }); },
+    () => { let a; do { a = R(101, 999) / 100; } while (Math.round(a * 100) % 100 === 0); const r = Math.round(a); return Q({ text: `Round ${money(a)} to the nearest pound.`, svg: FV.nline(Math.floor(a), Math.floor(a) + 1, 0.5, { minor: 0.1, label: v => money(v), arrowAt: [[a, money(a)]] }), answer: r, pre: '£', hint: '50p or more rounds up.', steps: [`<b>£${r}</b>`] }); },
+    () => { const p = R(105, 495) / 100, k = R(2, 4); return Q({ text: `How much do ${k} of these cost?`, svg: FV.tags([['🥪', 'sandwich', money(p)]]), answer: rnd(p * k, 2), pre: '£', hint: 'Multiply, or add it again and again.', steps: [`${k} × ${money(p)} = <b>${money(p * k)}</b>`] }); },
+    () => { let a; do { a = R(101, 999) / 100; } while (Math.round(a * 100) % 10 === 0); const r = rnd(Math.round(a * 10) / 10, 1); return Q({ text: `Round ${money(a)} to the nearest 10p.`, svg: FV.nline(Math.floor(a * 10) / 10, Math.floor(a * 10) / 10 + 0.1, 0.1, { minor: 0.01, label: v => money(v), arrowAt: [[a, money(a)]] }), answer: r, pre: '£', hint: 'Look at the last pence digit: 5 or more rounds up.', steps: [`<b>${money(r)}</b>`] }); }] });
+
+FSET('fs-e3-time', {
+  fig: FV.row(FV.clock(3, 45), FV.digital('15:45')), exfig: FV.nline(18, 21, 0.25, { every: 4, label: v => `${Math.floor(v)}:${String(Math.round((v % 1) * 60)).padStart(2, '0')}`, jumps: [[18 + 40 / 60, 19, '20 min'], [19, 20, '1 h'], [20, 20.25, '15 min']] }),
+  gens: [
+    () => { const h = R(1, 11), m = 5 * R(1, 11); return TXQ({ text: `It is the afternoon. Write the time on the clock in 24-hour time.`, svg: FV.clock(h, m), hint: 'pm: add 12 to the hours.', steps: [`${h}:${String(m).padStart(2, '0')} pm`, `<b>${hm(h + 12, m)}</b>`] }, timeAlts(h + 12, m)); },
+    () => { const h = R(13, 23), m = 5 * R(0, 11); return TXQ({ text: 'Write this time in 12-hour time using am or pm.', svg: FV.digital(hm(h, m)), hint: 'Take away 12, and it is pm.', steps: [`<b>${h12(h, m)}</b>`] }, [h12(h, m), h12(h, m).replace(' ', ''), h12(h, m).replace(':', '.')]); },
+    () => { const sh = R(7, 18), sm = 5 * R(0, 11), d = 5 * R(5, 18), e = sh * 60 + sm + d; return Q({ text: `The bus timetable is below. How many minutes does the journey take?${FV.table(['Stop', 'Time'], [['Town centre', hm(sh, sm)], ['Hospital', hm(Math.floor(e / 60), e % 60)]])}`, answer: d, unit: 'minutes', hint: 'Count on to the next hour, then on to the arrival time.', steps: [`From ${hm(sh, sm)} to ${hm(Math.floor(e / 60), e % 60)}`, `<b>${d} minutes</b>`] }); },
+    () => { const h = R(1, 11), m = 5 * R(0, 11), am = Math.random() < .5; return TXQ({ text: `It is the ${am ? 'morning' : 'evening'}. Write the time in 24-hour time.`, svg: FV.clock(h, m), hint: am ? 'Morning times start with 0: 09:20.' : 'Evening: add 12 to the hours.', steps: [`<b>${hm(am ? h : h + 12, m)}</b>`] }, timeAlts(am ? h : h + 12, m)); },
+    () => { const st = R(0, 6), days = P([28, 30, 31]), d = R(1, days - 14), k = P([7, 14]); return Q({ text: `A course starts on the date highlighted. A follow-up is ${k === 7 ? 'one week' : 'two weeks'} later. What date is the follow-up? (just the day number)`, svg: FV.calendar('March', st, days, { mark: [d] }), answer: d + k, hint: 'One week is 7 days. Count down the calendar.', steps: [`${d} + ${k} = <b>${d + k}</b>`] }); }] });
+
+FSET('fs-e3-measure', {
+  fig: FV.row(FV.ruler(4.5, 6), FV.scale(1.2, 2, 0.5, 'kg', { minor: 0.1 })), exfig: FV.row(FV.scale(1.2, 2, 0.5, 'kg', { minor: 0.1 }), FV.scale(0.95, 2, 0.5, 'kg', { minor: 0.05 })),
+  gens: [
+    () => { const kg = R(11, 49) / 10; return Q({ text: `Change ${fmt(kg)} kg to grams.`, svg: FV.scale(kg, 5, 1, 'kg', { minor: 0.1 }), answer: Math.round(kg * 1000), unit: 'g', hint: '1 kg = 1000 g. Multiply by 1000.', steps: [`${fmt(kg)} × 1000 = <b>${Math.round(kg * 1000)} g</b>`] }); },
+    () => { const L = R(15, 75) / 10; return Q({ text: 'How long is the pencil in centimetres? (Each small mark is 1 mm.)', svg: FV.ruler(L, 8), answer: L, unit: 'cm', hint: 'Count whole centimetres, then the small marks (tenths).', steps: [`<b>${fmt(L)} cm</b>`] }); },
+    () => { const st = P([200, 500]), mx = st * 5, lv = R(1, 9) * st / 2; return Q({ text: 'The scale has unlabelled marks. How heavy is the flour, in grams?', svg: FV.scale(lv, mx, st, 'g', { minor: st / 2 }), answer: lv, unit: 'g', hint: `There are 2 small steps between each number: each is worth ${st / 2} g.`, steps: [`<b>${lv} g</b>`] }); },
+    () => { const m = 500, st = 100, lv = 25 * R(2, 19); return Q({ text: 'How much liquid is in the jug? (The small marks are halfway.)', svg: FV.jug(lv - lv % 50, m, st), answer: lv - lv % 50, unit: 'ml', hint: 'Each small mark is 50 ml.', steps: [`<b>${lv - lv % 50} ml</b>`] }); },
+    () => { const l = R(11, 29) / 10, ml = 100 * R(8, 30) + 10 * R(1, 9); return MCQ({ text: `Which holds more: ${fmt(l)} litres or ${ml} ml?`, svg: FV.row(FV.jug(Math.min(l * 1000, 3000), 3000, 500), FV.jug(Math.min(ml, 3000), 3000, 500)), hint: 'Change litres to ml: × 1000.', steps: [`${fmt(l)} litres = ${l * 1000} ml`, `<b>${l * 1000 > ml ? fmt(l) + ' litres' : ml + ' ml'}</b>`] }, l * 1000 > ml ? `${fmt(l)} litres` : `${ml} ml`, [l * 1000 > ml ? `${ml} ml` : `${fmt(l)} litres`, 'They are the same']); }] });
+
+FSET('fs-e3-shape', {
+  fig: FV.row(FV.shape2('rectangle', { lines: [[75, 30, 75, 122], [0, 76, 150, 76]] }), FV.compass([[90, 'E'], [180, 'S'], [270, 'W']])), exfig: FV.compass([[180, 'half turn']]),
+  gens: [
+    () => { const x = P([['square', 4, [[75, 10, 75, 140], [10, 75, 140, 75], [20, 20, 130, 130], [130, 20, 20, 130]]], ['rectangle', 2, [[75, 30, 75, 122], [0, 76, 150, 76]]], ['triangle', 3, []], ['heart', 1, [[75, 20, 75, 140]]], ['hexagon', 6, []], ['kite', 1, [[75, 5, 75, 147]]], ['arrow', 1, [[0, 75, 150, 75]]]]); return Q({ text: `How many lines of symmetry does this ${x[0] === 'triangle' ? 'equilateral triangle' : x[0] === 'hexagon' ? 'regular hexagon' : x[0]} have?`, svg: FV.shape2(x[0]), answer: x[1], hint: 'Where could you fold it so the two halves match exactly?', steps: [`<b>${x[1]}</b>`] }); },
+    () => { const x = P([['heart', [[75, 20, 75, 140]], true], ['heart', [[10, 70, 140, 70]], false], ['rectangle', [[20, 40, 130, 112]], false], ['rectangle', [[75, 30, 75, 122]], true], ['letterL', [[20, 140, 130, 10]], false], ['arrow', [[0, 75, 150, 75]], true]]); return MCQ({ text: 'Is the dashed red line a line of symmetry?', svg: FV.sym(x[0], x[1]), hint: 'Imagine folding along the line. Do the halves match?', steps: [`<b>${x[2] ? 'Yes' : 'No'}</b>`] }, x[2] ? 'Yes' : 'No', [x[2] ? 'No' : 'Yes']); },
+    () => { const D = ['North', 'East', 'South', 'West'], i = R(0, 3), t = P([['a quarter turn clockwise', 1], ['a half turn', 2], ['a quarter turn anticlockwise', 3]]); return MCQ({ text: `You face ${D[i]} (the arrow). You make ${t[0]}. Which way do you face now?`, svg: FV.compass([[i * 90, '']]), hint: 'Clockwise goes N → E → S → W.', steps: [`<b>${D[(i + t[1]) % 4]}</b>`] }, D[(i + t[1]) % 4], D.filter((_, k) => k !== (i + t[1]) % 4)); },
+    () => { const x = P([['square', 4], ['rectangle', 4], ['right triangle', 1], ['triangle', 0], ['letterL', 5]]); return Q({ text: 'How many right angles does this shape have?', svg: FV.shape2(x[0]), answer: x[1], hint: 'A right angle is a square corner, like the corner of a page.', steps: [`<b>${x[1]}</b>`] }); },
+    () => { const d = P([30, 60, 90, 120, 150]); return MCQ({ text: 'Is this angle smaller than, equal to, or bigger than a right angle?', svg: FV.angle(d), hint: 'Compare it with the corner of a piece of paper.', steps: [`<b>${d < 90 ? 'smaller than a right angle' : d === 90 ? 'a right angle' : 'bigger than a right angle'}</b>`] }, d < 90 ? 'smaller than a right angle' : d === 90 ? 'a right angle' : 'bigger than a right angle', ['smaller than a right angle', 'a right angle', 'bigger than a right angle'].filter(v => v !== (d < 90 ? 'smaller than a right angle' : d === 90 ? 'a right angle' : 'bigger than a right angle'))); }] });
+
+FSET('fs-e3-data', {
+  fig: FV.line(['9am', '10am', '11am', '12pm', '1pm'], [6, 7, 9, 11, 10], { ymax: 12, step: 2, yl: '°C' }), exfig: FV.line(['9am', '12pm'], [6, 11], { ymax: 12, step: 1, yl: '°C' }),
+  gens: [
+    () => { const c = ['9am', '10am', '11am', '12pm', '1pm', '2pm'], v = c.map(() => R(2, 14)), k = R(0, 5); return Q({ text: `The line graph shows the temperature in a garden. What was the temperature at ${c[k]}?`, svg: FV.line(c, v, { ymax: 16, step: 2, yl: '°C' }), answer: v[k], unit: '°C', hint: 'Go up from the time to the point, then across.', steps: [`<b>${v[k]} °C</b>`] }); },
+    () => { const c = ['9am', '10am', '11am', '12pm', '1pm', '2pm'], v = c.map(() => R(2, 14)), i = R(0, 4), j = R(i + 1, 5); return Q({ text: `By how many degrees did the temperature change between ${c[i]} and ${c[j]}?`, svg: FV.line(c, v, { ymax: 16, step: 2, yl: '°C' }), answer: Math.abs(v[j] - v[i]), unit: '°C', hint: 'Read both values, then find the difference.', steps: [`${c[i]}: ${v[i]}, ${c[j]}: ${v[j]}`, `<b>${Math.abs(v[j] - v[i])} °C</b>`] }); },
+    () => { const cats = ['Jan', 'Feb', 'Mar', 'Apr'], vals = cats.map(() => 100 * R(2, 9)), i = R(0, 2), j = i + 1; return Q({ text: `The bar chart shows visitors to a museum. How many more or fewer visitors were there in ${cats[j]} than ${cats[i]}?`, svg: FV.bar(cats, vals, { ymax: 900, step: 100, yl: 'Visitors' }), answer: Math.abs(vals[j] - vals[i]), hint: 'Read both bars, then find the difference.', steps: [`${cats[i]}: ${vals[i]}, ${cats[j]}: ${vals[j]}`, `<b>${Math.abs(vals[j] - vals[i])}</b>`] }); },
+    () => { const rows = [['Walk', R(3, 14)], ['Bus', R(3, 14)], ['Car', R(3, 14)]], k = R(0, 2); return Q({ text: `The tally chart shows how people get to college. What is the frequency for ${rows[k][0].toLowerCase()}?`, svg: FV.tallyChart(rows), answer: rows[k][1], hint: 'Count the gates in fives, then the extra lines.', steps: [`<b>${rows[k][1]}</b>`] }); },
+    () => { const rows = [['Walk', R(3, 14)], ['Bus', R(3, 14)], ['Car', R(3, 14)]], t = rows.reduce((a, r) => a + r[1], 0); return Q({ text: 'How many people were asked altogether?', svg: FV.tallyChart(rows), answer: t, hint: 'Find each frequency, then add them.', steps: [rows.map(r => r[1]).join(' + ') + ` = <b>${t}</b>`] }); }] });
+
+/* =========================================================
+   FUNCTIONAL SKILLS PRACTICE, REBUILT TO MATCH EACH LESSON
+   Part 2: Level 1 and Level 2
+   ========================================================= */
+const rectFig = (w, h, u) => FG.poly([[0, 0], [w, 0], [w, h], [0, h]], { s: { 0: `${w} ${u}`, 1: `${h} ${u}` }, r: [0, 1, 2, 3], nd: false, size: 230 });
+
+/* ======================== LEVEL 1 ======================== */
+FSET('fs-l1-place', {
+  fig: FV.pvChart(['3', '4', '5', '2', '1', '0'], ['HTh', 'TTh', 'Th', 'H', 'T', 'O']), exfig: FV.thermo(-4, -10, 10, 5, { sub: 5 }),
+  gens: [
+    () => { const n = R(100000, 999999), s = String(n), pos = R(0, 5), d = s[pos]; if (d === '0') return Q({ text: `Write ${n.toLocaleString('en-GB')} rounded to the nearest thousand.`, svg: FV.pvChart(s.split(''), ['HTh', 'TTh', 'Th', 'H', 'T', 'O']), answer: Math.round(n / 1000) * 1000, hint: 'Look at the hundreds digit.', steps: [`<b>${(Math.round(n / 1000) * 1000).toLocaleString('en-GB')}</b>`] }); const v = +d * 10 ** (5 - pos); return Q({ text: `In ${n.toLocaleString('en-GB')}, the digit ${d} is in the ${['hundred thousands', 'ten thousands', 'thousands', 'hundreds', 'tens', 'ones'][pos]} column. What is it worth?`, svg: FV.pvChart(s.split(''), ['HTh', 'TTh', 'Th', 'H', 'T', 'O']), answer: v, hint: 'Read the column heading.', steps: [`<b>${v.toLocaleString('en-GB')}</b>`] }); },
+    () => { const a = -R(2, 9), r = R(5, 15); return Q({ text: `At midnight the thermometer showed ${a} °C. By midday the temperature rose by ${r} °C. What is the temperature at midday?`, svg: FV.thermo(a, -10, 20, 5, { sub: 5 }), answer: a + r, unit: '°C', hint: 'Count up the thermometer from the red line.', steps: [`${a} + ${r} = <b>${a + r} °C</b>`] }); },
+    () => { const a = R(2, 15), b = -R(2, 9); return Q({ text: `It is ${a} °C in London and ${b} °C in Oslo. What is the difference in temperature?`, svg: FV.nline(-10, 20, 5, { minor: 1, dot: [a, b], label: v => (v < 0 ? '−' + (-v) : v) }), answer: a - b, unit: '°C', hint: 'Count from the lower to the higher temperature, through zero.', steps: [`${-b} up to 0, then ${a} more`, `<b>${a - b} °C</b>`] }); },
+    () => { const v = R(11, 999) / 10, k = P([10, 100, 1000]), mul = Math.random() < .5; const ans = mul ? rnd(v * k, 3) : rnd(v / k, 5); return Q({ text: `Work out ${fmt(v)} ${mul ? '×' : '÷'} ${k}.`, svg: FV.sv(400, 70, FV.T(200, 32, `Digits move ${Math.log10(k)} place${k > 10 ? 's' : ''} ${mul ? 'left ←' : 'right →'}`, { acc: 1 }) + FV.T(200, 60, `${mul ? 'bigger' : 'smaller'} answer`, { sm: 1 }), 'Digits move'), answer: ans, hint: `× moves digits left, ÷ moves them right, ${Math.log10(k)} place${k > 10 ? 's' : ''}.`, steps: [`<b>${fmt(ans)}</b>`] }); },
+    () => { const bal = R(50, 300), out = bal + R(20, 200); return Q({ text: `The bank statement shows Ali's balance. Ali then pays a bill of £${out}. What is the new balance?`, svg: FV.statement([['1 Jun', 'Opening balance', '', `£${bal}`]]), answer: bal - out, pre: '£', hint: 'The balance will go below zero (overdrawn).', steps: [`${bal} − ${out} = <b>−£${out - bal}</b>`] }); }] });
+
+FSET('fs-l1-ops', {
+  fig: FV.sv(360, 90, FV.Rc(6, 6, 348, 78, { fill: FV.C.yel, rx: 10 }) + FV.T(180, 38, 'B  I  D M  A S', { fs: 24 }) + FV.T(180, 70, 'Brackets · Indices · Divide/Multiply · Add/Subtract', { sm: 1 }), 'BIDMAS'), exfig: FV.receipt([['Call-out', '£30'], ['Labour: 3 h × £45', '?']], { title: 'PLUMBER', total: '?' }),
+  gens: [
+    () => { const a = R(2, 20), b = R(2, 9), c = R(2, 9); return Q({ text: `Work out ${a} + ${b} × ${c}`, svg: FV.sv(300, 70, FV.T(150, 30, `${a} + <tspan fill="var(--brand,#3A10E5)">${b} × ${c}</tspan>`, { fs: 24 }) + FV.T(150, 60, 'multiply first', { sm: 1 }), 'Multiply first'), answer: a + b * c, hint: 'Multiply before you add.', steps: [`${b} × ${c} = ${b * c}`, `${a} + ${b * c} = <b>${a + b * c}</b>`], traps: [{ v: (a + b) * c, why: 'Do the × before the +.' }] }); },
+    () => { const n = R(2, 12); return Q({ text: `Work out ${n}²`, svg: FV.sqgrid([...Array(n * n)].map((_, i) => [i % n, Math.floor(i / n)]), n, n), answer: n * n, hint: `${n}² means ${n} × ${n}: a square ${n} by ${n}.`, steps: [`${n} × ${n} = <b>${n * n}</b>`], traps: [{ v: 2 * n, why: `${n}² is ${n} × ${n}, not ${n} × 2.` }] }); },
+    () => { const a = R(2, 9), b = R(2, 9), c = R(2, 6); return Q({ text: `Work out (${a} + ${b}) × ${c}`, answer: (a + b) * c, hint: 'Brackets first.', steps: [`${a} + ${b} = ${a + b}`, `${a + b} × ${c} = <b>${(a + b) * c}</b>`] }); },
+    () => { const f = R(20, 50), r = R(8, 15), h = R(2, 8); return Q({ text: `A van hire company charges using this formula. How much does it cost to hire a van for ${h} hours?`, svg: FV.sv(380, 70, FV.Rc(6, 6, 368, 58, { fill: FV.C.blu, rx: 10 }) + FV.T(190, 42, `Cost = £${f} + £${r} per hour`, { fs: 18 }), 'Formula card'), answer: f + r * h, pre: '£', hint: 'Work out the hourly part first, then add the fixed charge.', steps: [`${r} × ${h} = ${r * h}`, `${f} + ${r * h} = <b>£${f + r * h}</b>`] }); },
+    () => { const per = P([20, 25, 30, 40]), extra = P([15, 20, 25, 30]), kg = P([1.5, 2, 2.5, 3, 3.5, 4]); return Q({ text: `Cooking time = ${per} minutes per kg plus ${extra} minutes. How long does a ${fmt(kg)} kg joint take? (minutes)`, svg: FV.scale(kg, 5, 1, 'kg', { minor: 0.5 }), answer: per * kg + extra, unit: 'minutes', hint: 'Multiply, then add.', steps: [`${per} × ${fmt(kg)} = ${per * kg}`, `+ ${extra} = <b>${per * kg + extra} minutes</b>`] }); }] });
+
+FSET('fs-l1-frac', {
+  fig: FV.fshapes([[2, 4, 'bar', '2/4'], [1, 2, 'bar', '1/2'], [3, 4, 'circle', '¾']]), exfig: FV.plank('2.4 m', 3 / 8),
+  gens: [
+    () => { const d = P([3, 4, 5, 8]), n = R(1, d - 1), k = R(3, 40), w = d * k; return Q({ text: `${fr(n, d, 1)} of the ${w} people at a festival are under 18. How many people is that?`, svg: FV.fbar(n, d, { total: w, lab: k }), answer: n * k, hint: 'Divide by the bottom, multiply by the top.', steps: [`${w} ÷ ${d} = ${k}`, `${k} × ${n} = <b>${n * k}</b>`] }); },
+    () => { const d = P([4, 5, 8]), n = R(1, d - 1), kg = d * R(2, 8) / 10; return Q({ text: `A recipe uses ${fr(n, d, 1)} of a ${fmt(kg)} kg bag of flour. How many grams is that?`, svg: FV.fbar(n, d, { total: fmt(kg) + ' kg' }), answer: Math.round(kg * 1000 * n / d), unit: 'g', hint: 'Change kg to g first (× 1000).', steps: [`${fmt(kg)} kg = ${kg * 1000} g`, `${kg * 1000} ÷ ${d} × ${n} = <b>${Math.round(kg * 1000 * n / d)} g</b>`] }); },
+    () => { const fs = shuffle([[1, 2], [2, 3], [3, 4], [3, 5], [5, 8], [2, 5]]).slice(0, 3); const b = fs.slice().sort((x, y) => y[0] / y[1] - x[0] / x[1])[0]; return MCQ({ text: 'Which fraction is the largest? Use the diagrams.', svg: FV.fshapes(fs.map(f => [f[0], f[1], 'bar', `${f[0]}/${f[1]}`])), hint: 'Look at which bar has the most shaded.', steps: [`<b>${b[0]}/${b[1]}</b>`] }, `${b[0]}/${b[1]}`, fs.filter(f => f !== b).map(f => `${f[0]}/${f[1]}`)); },
+    () => { const w = R(1, 3), d = P([2, 3, 4]), n = R(1, d - 1); return Q({ kind: 'frac', text: `How many quarters, thirds or halves? Write ${w}${fr(n, d, 1)} as an improper fraction.`, svg: FV.sv((w + 1) * 110, 110, [...Array(w + 1)].map((_, i) => `<g transform="translate(${i * 110},0)">${FV.fcircle(i < w ? d : n, d, 46).replace(/^<svg[^>]*>/, '').replace(/<\/svg>$/, '')}</g>`).join(''), 'Fraction circles'), answer: [w * d + n, d], hint: `Each whole is ${d}/${d}. Count all the parts.`, steps: [`${w} × ${d} + ${n} = ${w * d + n}`, `<b>${w * d + n}/${d}</b>`] }); },
+    () => { const d = P([4, 6, 8, 10]), k = P([2]), n = R(1, d / 2 - 1) * 2; const [a, b] = simp(n, d); return Q({ kind: 'frac', text: `Write ${n}/${d} in its simplest form.`, svg: FV.row(FV.fbar(n, d, { w: 240 }), FV.fbar(a, b, { w: 240 })), answer: [a, b], hint: 'Divide the top and bottom by the same number.', steps: [`<b>${a}/${b}</b>`] }); }] });
+
+FSET('fs-l1-dec', {
+  fig: FV.nline(7.4, 7.6, 0.1, { minor: 0.01, arrowAt: [[7.47, '7.47']] }), exfig: FV.sv(420, 60, FV.Rc(10, 20, 150, 26, { fill: FV.C.yel }) + FV.Rc(160, 20, 24, 26, { fill: FV.C.grn }) + FV.Rc(184, 20, 50, 26, { fill: FV.C.blu }) + FV.T(85, 14, '3.75 m', { sm: 1 }) + FV.T(172, 14, '0.6', { sm: 1 }) + FV.T(209, 14, '1.25', { sm: 1 }), 'Three lengths end to end'),
+  gens: [
+    () => { const a = R(11, 99) / 10, b = R(101, 999) / 100; return Q({ text: `Add these lengths: ${fmt(a)} m + ${fmt(b)} m`, svg: FV.sv(260, 110, FV.T(200, 40, a.toFixed(2), { fs: 24, a: 'end' }) + FV.T(200, 76, b.toFixed(2), { fs: 24, a: 'end' }) + FV.T(70, 76, '+', { fs: 24 }) + FV.Ln(60, 88, 210, 88), 'Line up the points'), answer: rnd(a + b, 2), unit: 'm', hint: 'Line up the decimal points. Fill gaps with 0.', steps: [`<b>${fmt(rnd(a + b, 2))} m</b>`] }); },
+    () => { const p = R(150, 990) / 100, k = R(2, 6); return Q({ text: `Paint costs ${money(p)} per litre. How much do ${k} litres cost?`, svg: FV.tags([['🪣', 'per litre', money(p)]]), answer: rnd(p * k, 2), pre: '£', hint: 'Multiply.', steps: [`${k} × ${money(p)} = <b>${money(p * k)}</b>`] }); },
+    () => { let v; do { v = R(1001, 9999) / 1000; } while (Math.round(v * 1000) % 100 === 50); const dp = P([0, 1]), r = rnd(v, dp); return Q({ text: `Round ${fmt(v)} to ${dp ? '1 decimal place' : 'the nearest whole number'}.`, svg: dp ? FV.nline(Math.floor(v * 10) / 10, Math.floor(v * 10) / 10 + 0.1, 0.1, { minor: 0.01, arrowAt: [[v, fmt(v)]] }) : FV.nline(Math.floor(v), Math.floor(v) + 1, 1, { minor: 0.1, arrowAt: [[v, fmt(v)]] }), answer: r, hint: 'Which end of the line is it nearer?', steps: [`<b>${fmt(r)}</b>`] }); },
+    () => { const s = shuffle([R(1, 9) / 10, R(11, 99) / 100, R(101, 999) / 1000]); return TXQ({ text: `Put in order, smallest first: ${s.map(x => fmt(x)).join(', ')}`, svg: FV.nline(0, 1, 0.1, { minor: 0.05, dot: s }), hint: 'Give each the same number of decimal places.', steps: [`<b>${s.slice().sort((a, b) => a - b).map(x => fmt(x)).join(', ')}</b>`] }, [s.slice().sort((a, b) => a - b).map(x => fmt(x)).join(', '), s.slice().sort((a, b) => a - b).map(x => fmt(x)).join(' ')]); },
+    () => { const L = R(51, 199) / 10, k = 3; return Q({ text: `A ${fmt(L)} m rope is cut into ${k} equal pieces. How long is each piece? Give your answer to 2 decimal places.`, svg: FV.fbar(0, k, { total: fmt(L) + ' m' }), answer: rnd(L / k, 2), unit: 'm', hint: 'Divide, then round to 2 d.p.', steps: [`${fmt(L)} ÷ ${k} = ${fmt(rnd(L / k, 4))}`, `<b>${fmt(rnd(L / k, 2))} m</b>`] }); }] });
+
+FSET('fs-l1-pct', {
+  fig: FV.fbar(10, 10, { lab: '10%', w: 420 }), exfig: FV.sv(240, 120, `<path d="M20,20 h160 l40,40 l-40,40 h-160z" fill="${FV.C.red}" stroke="currentColor" stroke-width="2.5"/>` + FV.T(100, 56, 'SALE', { fs: 22 }) + FV.T(100, 86, '15% off £60', { sm: 1 }), 'Sale tag'),
+  gens: [
+    () => { const p = P([10, 20, 25, 5, 15, 30, 50, 75]), a = 20 * R(2, 30); return Q({ text: `Work out ${p}% of £${a}.`, svg: FV.fbar(p / 5, 20, { total: '£' + a, w: 400 }), answer: a * p / 100, pre: '£', hint: p % 10 === 5 ? '10% = ÷ 10. 5% is half of 10%.' : 'Find 10% (÷ 10), then build up.', steps: [`10% = ${fmt(a / 10)}`, `${p}% = <b>£${fmt(a * p / 100)}</b>`] }); },
+    () => { const o = 20 * R(3, 25), p = P([10, 20, 25, 30, 40, 50]); return Q({ text: 'What is the sale price?', svg: FV.sv(260, 120, `<path d="M20,20 h180 l40,40 l-40,40 h-180z" fill="${FV.C.red}" stroke="currentColor" stroke-width="2.5"/>` + FV.T(110, 52, `Coat £${o}`, { fs: 20 }) + FV.T(110, 84, `${p}% OFF`, { fs: 20 }), 'Sale tag'), answer: o * (1 - p / 100), pre: '£', hint: 'Find the discount, then take it away.', steps: [`${p}% of ${o} = ${o * p / 100}`, `${o} − ${o * p / 100} = <b>£${o * (1 - p / 100)}</b>`] }); },
+    () => { const pr = 100 * R(5, 40), r = P([2, 3, 4, 5]), y = R(2, 5); return Q({ text: `£${pr.toLocaleString('en-GB')} is saved at ${r}% simple interest per year. How much interest is earned in ${y} years?`, svg: FV.bar([...Array(y)].map((_, i) => 'Yr ' + (i + 1)), [...Array(y)].map(() => pr * r / 100), { ymax: Math.ceil(pr * r / 100 / 10) * 10 * 1.2, step: Math.ceil(pr * r / 100 / 10) * 10 * 0.2, yl: 'Interest (£)' }), answer: pr * r / 100 * y, pre: '£', hint: 'Simple interest is the same every year.', steps: [`${r}% of ${pr} = ${pr * r / 100}`, `× ${y} = <b>£${pr * r / 100 * y}</b>`] }); },
+    () => { const s = shuffle([5 * R(1, 6), 5 * R(7, 12), 5 * R(13, 19)]); return TXQ({ text: `Put these percentages in order, largest first: ${s.map(x => x + '%').join(', ')}`, svg: FV.row(...s.map(x => FV.hundred(x))), hint: 'Look at how many squares are shaded.', steps: [`<b>${s.slice().sort((a, b) => b - a).map(x => x + '%').join(', ')}</b>`] }, [s.slice().sort((a, b) => b - a).map(x => x + '%').join(', '), s.slice().sort((a, b) => b - a).join(', ')]); },
+    () => { const n = R(5, 95); return Q({ text: 'What percentage of the grid is shaded?', svg: FV.hundred(n), answer: n, unit: '%', hint: 'There are 100 squares. Count the shaded ones.', steps: [`${n} out of 100 = <b>${n}%</b>`] }); }] });
+
+FSET('fs-l1-conv', {
+  fig: FV.map('Ashby', 'Brook', 6.5, '1 cm = 2 km'), exfig: FV.map('Town A', 'Town B', 6.5, '1 cm = 2 km'),
+  gens: [
+    () => { const x = P([['cm', 'm', 100, R(105, 950)], ['g', 'kg', 1000, R(1050, 9500)], ['ml', 'litres', 1000, R(1050, 4900)], ['mm', 'cm', 10, R(15, 290)], ['m', 'km', 1000, R(1200, 9800)]]); return Q({ text: `Change ${x[3]} ${x[0]} to ${x[1]}.`, svg: FV.sv(360, 60, FV.Rc(6, 10, 140, 40, { fill: FV.C.blu, rx: 8 }) + FV.T(76, 37, x[0], { fs: 18 }) + FV.Rc(214, 10, 140, 40, { fill: FV.C.yel, rx: 8 }) + FV.T(284, 37, x[1], { fs: 18 }) + FV.T(180, 26, '÷ ' + x[2], { sm: 1, acc: 1 }) + FV.Ln(150, 34, 208, 34, { w: 2 }), 'Conversion'), answer: x[3] / x[2], unit: x[1], hint: `Smaller unit to bigger unit: divide by ${x[2]}.`, steps: [`${x[3]} ÷ ${x[2]} = <b>${fmt(x[3] / x[2])} ${x[1]}</b>`] }); },
+    () => { const m = 60 * R(1, 4) + 15 * R(1, 3); return TXQ({ text: `A shift lasts ${m} minutes. Write this in hours and minutes.`, svg: FV.nline(0, Math.ceil(m / 60) * 60, 60, { minor: 15, label: v => v / 60 + ' h', arrowAt: [[m, m + ' min']] }), hint: 'How many 60s fit?', steps: [`${m} ÷ 60 = ${Math.floor(m / 60)} r ${m % 60}`, `<b>${Math.floor(m / 60)} h ${m % 60} min</b>`] }, [`${Math.floor(m / 60)} h ${m % 60} min`, `${Math.floor(m / 60)}h${m % 60}min`, `${Math.floor(m / 60)} hours ${m % 60} minutes`, `${Math.floor(m / 60)} hour ${m % 60} minutes`, `${Math.floor(m / 60)}h ${m % 60}m`]); },
+    () => { const k = P([2, 5, 10]), cm = R(20, 95) / 10; return Q({ text: 'How far apart are the two villages in real life?', svg: FV.map('Ashby', 'Brook', Math.min(cm, 9.5), `1 cm = ${k} km`) + `<p class="small center mut" style="margin:-8px 0 10px">On the map they are ${fmt(cm)} cm apart.</p>`, answer: rnd(cm * k, 2), unit: 'km', hint: 'Multiply the map distance by the scale.', steps: [`${fmt(cm)} × ${k} = <b>${fmt(rnd(cm * k, 2))} km</b>`] }); },
+    () => { const sc = P([50, 100]), m = R(2, 9); return Q({ text: `A plan of a room uses a scale of 1 : ${sc}. The real room is ${m} m long. How long is it on the plan, in cm?`, svg: FV.sv(300, 140, FV.Rc(20, 20, 200, 100, { fill: FV.C.blu }) + FV.T(120, 14, '? cm on the plan', { sm: 1, acc: 1 }) + `<text x="120" y="82" text-anchor="middle" style="font-size:34px">🛋️</text>` + FV.T(250, 74, `1 : ${sc}`, { sm: 1 }), 'Floor plan'), answer: m * 100 / sc, unit: 'cm', hint: `Change m to cm, then divide by ${sc}.`, steps: [`${m} m = ${m * 100} cm`, `${m * 100} ÷ ${sc} = <b>${m * 100 / sc} cm</b>`] }); },
+    () => { const p = R(105, 999); return Q({ text: `Change ${p}p to pounds.`, svg: FV.money(['£1', ...(p >= 200 ? ['£1'] : []), '50p', '20p']).replace(/<svg/, '<svg style="max-width:240px"'), answer: p / 100, pre: '£', hint: '100p = £1. Divide by 100.', steps: [`${p} ÷ 100 = <b>${money(p / 100)}</b>`] }); }] });
+
+FSET('fs-l1-area', {
+  fig: FV.row(FV.sqgrid([...Array(12)].map((_, i) => [i % 4, Math.floor(i / 4)]), 4, 3), FV.cuboid('4 cm', '2 cm', '3 cm')), exfig: rectFig(5, 4, 'm'),
+  gens: [
+    () => { const w = R(3, 8), h = R(2, 6), cells = []; for (let i = 0; i < w; i++) for (let j = 0; j < h; j++) cells.push([i, j]); return Q({ text: 'Each square is 1 cm². What is the area of the shape?', svg: FV.sqgrid(cells, w + 1, h + 1), answer: w * h, unit: 'cm²', hint: 'Count the squares, or multiply length × width.', steps: [`${w} × ${h} = <b>${w * h} cm²</b>`] }); },
+    () => { const w = R(3, 15), h = R(2, 10); return Q({ text: 'Work out the perimeter of this rectangle.', svg: rectFig(w, h, 'm'), answer: 2 * (w + h), unit: 'm', hint: 'Add all four sides.', steps: [`${w} + ${h} + ${w} + ${h} = <b>${2 * (w + h)} m</b>`], traps: [{ v: w * h, why: 'That is the area. Perimeter is the distance round the edge.' }] }); },
+    () => { const W = R(8, 14), H = R(6, 10), w2 = R(3, W - 3), h2 = R(2, H - 3); const a = W * H - w2 * h2; return Q({ text: 'Work out the area of this floor.', svg: FG.poly([[0, 0], [W - w2, 0], [W - w2, h2], [W, h2], [W, H], [0, H]], { s: { 0: `${W - w2} m`, 1: `${h2} m`, 2: `${w2} m`, 3: `${H - h2} m`, 4: `${W} m`, 5: `${H} m` }, r: [0, 2, 4, 5], nd: false, size: 260 }), answer: a, unit: 'm²', hint: 'Split it into two rectangles.', steps: [`${W} × ${H - h2} = ${W * (H - h2)}`, `${W - w2} × ${h2} = ${(W - w2) * h2}`, `Total <b>${a} m²</b>`] }); },
+    () => { const l = R(3, 12), w = R(2, 8), h = R(2, 8); return Q({ text: 'What is the volume of this box?', svg: FV.cuboid(`${l} cm`, `${w} cm`, `${h} cm`), answer: l * w * h, unit: 'cm³', hint: 'Length × width × height.', steps: [`${l} × ${w} × ${h} = <b>${l * w * h} cm³</b>`] }); },
+    () => { const a = R(3, 8), b = R(3, 8), p = P([8, 10, 12, 15]); return Q({ text: `A garden is ${a} m by ${b} m. Turf costs £${p} per m². How much will it cost to turf the whole garden?`, svg: rectFig(a, b, 'm'), answer: a * b * p, pre: '£', hint: 'Find the area, then multiply by the cost.', steps: [`${a} × ${b} = ${a * b} m²`, `${a * b} × ${p} = <b>£${a * b * p}</b>`] }); }] });
+
+FSET('fs-l1-shape', {
+  fig: FV.row(FV.angle(50, { lab: 'acute' }), FV.angle(90), FV.angle(130, { lab: 'obtuse' })), exfig: FV.compass([[90, 'E']]),
+  gens: [
+    () => { const d = P([R(20, 80), 90, R(100, 170)]); const t = d < 90 ? 'Acute' : d === 90 ? 'Right angle' : 'Obtuse'; return MCQ({ text: 'What type of angle is this?', svg: FV.angle(d), hint: 'Acute < 90°, right = 90°, obtuse between 90° and 180°.', steps: [`<b>${t}</b>`] }, t, ['Acute', 'Right angle', 'Obtuse', 'Reflex'].filter(x => x !== t)); },
+    () => { const k = P(['cube', 'cuboid', 'pyramid', 'prism', 'cylinder']), others = shuffle(['cube', 'cuboid', 'pyramid', 'prism', 'cylinder'].filter(x => x !== k)).slice(0, 2), list = shuffle([k, ...others]); return MCQ({ text: `Which net folds to make a ${k === 'prism' ? 'triangular prism' : k}?`, svg: FV.row(...list.map((n, i) => FV.net(n).replace('</svg>', FV.T(30, 20, ABC[i], { acc: 1 }) + '</svg>'))), hint: { cube: '6 squares', cuboid: '6 rectangles', pyramid: '1 square and 4 triangles', prism: '3 rectangles and 2 triangles', cylinder: '1 rectangle and 2 circles' }[k], steps: [`<b>${ABC[list.indexOf(k)]}</b>`] }, ABC[list.indexOf(k)], ABC.slice(0, 3).filter((_, i) => i !== list.indexOf(k))); },
+    () => { const q = P([['the plan (view from above)', 'A'], ['the front elevation (view from the front)', 'B']]); return MCQ({ text: `Which drawing shows ${q[0]} of the building?`, svg: FV.houseViews(), hint: 'From above you see the roof. From the front you see the end wall and the shape of the roof.', steps: [`<b>${q[1]}</b>`] }, q[1], ['A', 'B', 'C'].filter(x => x !== q[1])); },
+    () => { const D = ['North', 'East', 'South', 'West'], i = R(0, 3), t = P([90, 180, 270]), cw = Math.random() < .5, j = cw ? (i + t / 90) % 4 : (i - t / 90 + 8) % 4; return MCQ({ text: `You face ${D[i]} and turn ${t}° ${cw ? 'clockwise' : 'anticlockwise'}. Which direction are you facing?`, svg: FV.compass([[i * 90, 'start']]), hint: '90° is a quarter turn.', steps: [`<b>${D[j]}</b>`] }, D[j], D.filter((_, k) => k !== j)); },
+    () => { const a = R(25, 155); return Q({ text: 'Work out the missing angle on the straight line.', svg: FV.lineAngles(a, '?', (180 - a) + '°'), answer: a, unit: '°', hint: 'Angles on a straight line add up to 180°.', steps: [`180 − ${180 - a} = <b>${a}°</b>`] }); }] });
+
+FSET('fs-l1-data', {
+  fig: FV.pie([{ l: 'Bus', a: 180, show: 1 }, { l: 'Walk', a: 90, show: 1 }, { l: 'Car', a: 90, show: 1 }]), exfig: FV.bar(['A', 'B', 'C', 'D'], [4, 7, 9, 12], { ymax: 12, step: 2 }),
+  gens: [
+    () => { const v = Array.from({ length: P([4, 5]) }, () => R(5, 25)); while (v.reduce((a, b) => a + b, 0) % v.length) v[0]++; const m = v.reduce((a, b) => a + b, 0) / v.length; return Q({ text: 'The bar chart shows umbrellas sold each day. Work out the mean number sold per day.', svg: FV.bar(['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].slice(0, v.length), v, { ymax: 30, step: 5, yl: 'Umbrellas' }) + `<p class="small center mut" style="margin:-8px 0 10px">${v.join(', ')}</p>`, answer: m, hint: 'Add them up, then divide by how many days.', steps: [`Total ${v.reduce((a, b) => a + b, 0)}`, `÷ ${v.length} = <b>${m}</b>`] }); },
+    () => { const v = Array.from({ length: 6 }, () => R(-4, 18)); const r = Math.max(...v) - Math.min(...v); return Q({ text: `Midday temperatures (°C) one week: ${v.map(x => x < 0 ? '−' + (-x) : x).join(', ')}. The thermometer shows the warmest day. Work out the range.`, svg: FV.thermo(Math.max(...v), -5, 20, 5, { sub: 5 }), answer: r, unit: '°C', hint: 'Range = biggest − smallest.', steps: [`${Math.max(...v)} − ${Math.min(...v) < 0 ? '(' + Math.min(...v) + ')' : Math.min(...v)} = <b>${r}</b>`] }); },
+    () => { const secs = shuffle([['Bus', 180], ['Walk', 90], ['Car', 60], ['Bike', 30]]), n = P([24, 36, 48, 60, 120]), k = R(0, 3); return Q({ text: `${n} students were asked how they travel to college. How many travel by ${secs[k][0].toLowerCase()}?`, svg: FV.pie(secs.map(([l, a]) => ({ l, a, show: 1 }))), answer: n * secs[k][1] / 360, hint: 'The whole circle (360°) is everyone. What fraction of 360° is the slice?', steps: [`${secs[k][1]}/360 of ${n} = <b>${n * secs[k][1] / 360}</b>`] }); },
+    () => { const vals = Array.from({ length: 14 }, () => R(1, 39)); const cls = [[0, 9], [10, 19], [20, 29], [30, 39]], k = R(0, 3), f = vals.filter(v => v >= cls[k][0] && v <= cls[k][1]).length; return Q({ text: `Ages of people at a party: ${vals.join(', ')}. Complete the grouped table. How many people are in the ${cls[k][0]}–${cls[k][1]} group?${FV.table(['Age', 'Frequency'], cls.map((c, i) => [`${c[0]}–${c[1]}`, i === k ? '?' : vals.filter(v => v >= c[0] && v <= c[1]).length]))}`, answer: f, hint: 'Go through the list and tally each one in its group.', steps: [`<b>${f}</b>`] }); },
+    () => { const c = ['Tea', 'Coffee', 'Juice', 'Water']; let v; do { v = c.map(() => R(3, 18)); } while (new Set(v).size < 4); const k = v.indexOf(Math.max(...v)); return MCQ({ text: 'The bar chart shows drinks sold at a stall. Which drink was the most popular?', svg: FV.bar(c, v, { ymax: 20, step: 2, yl: 'Sold' }), hint: 'The tallest bar.', steps: [`<b>${c[k]}</b>`] }, c[k], c.filter((_, i) => i !== k)); }] });
+
+FSET('fs-l1-prob', {
+  fig: FV.probScale([[0.25, 'unlikely'], [0.8, 'likely']]), exfig: FV.bag([['red', '#F25C5C', 3], ['blue', '#6CA8F0', 5]]),
+  gens: [
+    () => { const r = R(1, 6), b = R(1, 6), g = R(0, 4), t = r + b + g, ask = P(['red', 'blue']); const n = ask === 'red' ? r : b; const [a, d] = simp(n, t); return Q({ kind: 'frac', text: `One counter is taken from the bag without looking. What is the probability it is ${ask}?`, svg: FV.bag([['red', '#F25C5C', r], ['blue', '#6CA8F0', b], ['green', '#6CD49A', g]]), answer: [a, d], hint: `Number of ${ask} ÷ total number of counters.`, steps: [`${n} ${ask} out of ${t}`, `<b>${n}/${t}${a !== n ? ' = ' + a + '/' + d : ''}</b>`] }); },
+    () => { const q = P([['an even number', 3], ['a 6', 1], ['more than 4', 2], ['a number less than 3', 2], ['an odd number', 3]]); const [a, d] = simp(q[1], 6); return Q({ kind: 'frac', text: `A fair dice is rolled. What is the probability of getting ${q[0]}?`, svg: FV.dice([1, 2, 3, 4, 5, 6]), answer: [a, d], hint: 'There are 6 possible outcomes. Count the ones you want.', steps: [`${q[1]} out of 6 = <b>${a}/${d}</b>`] }); },
+    () => { const e = P([['The sun will rise tomorrow', 'Certain', 1], ['A fair coin lands on heads', 'Even chance', .5], ['You roll a 7 on a normal dice', 'Impossible', 0], ['It will rain in the UK at some point next month', 'Likely', .85], ['You win the lottery this week', 'Unlikely', .05]]); return MCQ({ text: `How likely is this? “${e[0]}”`, svg: FV.probScale(), hint: 'Think about where it goes on the scale from 0 to 1.', steps: [`<b>${e[1]}</b>`] }, e[1], ['Impossible', 'Unlikely', 'Even chance', 'Likely', 'Certain'].filter(x => x !== e[1]).slice(0, 3)); },
+    () => { const n = P([4, 5, 6, 8]), w = R(1, n - 1); const labs = shuffle([...Array(n)].map((_, i) => i < w ? 'Win' : 'Lose')); const [a, d] = simp(w, n); return Q({ kind: 'frac', text: 'The spinner has equal sections. What is the probability of landing on Win?', svg: FV.spinner(labs, labs.map(l => l === 'Win' ? FV.C.grn : FV.C.red)), answer: [a, d], hint: 'Count the Win sections and all the sections.', steps: [`${w} out of ${n} = <b>${a}/${d}</b>`] }); },
+    () => { const a = R(1, 4), b = R(5, 9); const better = Math.random() < .5; return MCQ({ text: `Spinner A has ${better ? b : a} Win sections out of 10. Spinner B has ${better ? a : b} Win sections out of 10. Which spinner gives the better chance of winning?`, svg: FV.probScale([[(better ? b : a) / 10, 'A'], [(better ? a : b) / 10, 'B']]), hint: 'The one nearer to 1 is more likely.', steps: [`<b>Spinner ${better ? 'A' : 'B'}</b>`] }, `Spinner ${better ? 'A' : 'B'}`, [`Spinner ${better ? 'B' : 'A'}`, 'They are the same']); }] });
+
+/* ======================== LEVEL 2 ======================== */
+FSET('fs-l2-num', {
+  fig: FV.nline(-2000, 500, 500, { minor: 250, dot: [-1250, -125], label: v => v < 0 ? '−' + (-v) : v }), exfig: FV.tags([['⛽', 'per litre', '£2.95']]),
+  gens: [
+    () => { const a = R(21, 89) / 10, b = R(21, 89); const ea = Math.round(a), eb = Math.round(b / 10) * 10; return Q({ text: `Estimate the cost of ${b} litres of fuel at £${a.toFixed(2)} a litre, by rounding each number to 1 significant figure.`, svg: FV.tags([['⛽', 'per litre', '£' + a.toFixed(2)]]), answer: ea * eb, pre: '£', hint: 'Round first, then multiply.', steps: [`£${a.toFixed(2)} → ${ea}, ${b} → ${eb}`, `${ea} × ${eb} = <b>£${ea * eb}</b>`] }); },
+    () => { const a = -R(2, 15), b = -R(16, 30); return MCQ({ text: `Freezer A is at ${a} °C. Freezer B is at ${b} °C. Which is colder?`, svg: FV.row(FV.thermo(a, -30, 10, 10, { sub: 2 }), FV.thermo(b, -30, 10, 10, { sub: 2 })), hint: 'Further below zero is colder.', steps: [`${b} is lower than ${a}: <b>Freezer B</b>`] }, 'Freezer B', ['Freezer A', 'They are the same']); },
+    () => { const bal = -R(50, 400), dep = R(100, 900); return Q({ text: `Here is part of a bank statement. Wages of £${dep} are paid in. What is the new balance?`, svg: FV.statement([['3 Mar', 'Balance', '', `−£${-bal}`], ['4 Mar', 'Wages', `+£${dep}`, '?']]), answer: bal + dep, pre: '£', hint: 'Start below zero and add.', steps: [`${bal} + ${dep} = <b>£${bal + dep}</b>`] }); },
+    () => { const n = R(12, 48) * 1000 + R(100, 999), k = R(12, 25); return Q({ text: `A festival sold ${n.toLocaleString('en-GB')} tickets at £${k} each. How much money was taken?`, svg: FV.tags([['🎫', 'ticket', '£' + k]]), answer: n * k, pre: '£', hint: 'Multiply. Estimate first to check.', steps: [`${n} × ${k} = <b>£${(n * k).toLocaleString('en-GB')}</b>`] }); },
+    () => { const s = shuffle([-R(1001, 2000), -R(100, 999), -R(10, 99), R(10, 500)]); return TXQ({ text: `Put these account balances in order, lowest first: ${s.map(v => (v < 0 ? '−£' : '£') + Math.abs(v)).join(', ')}`, svg: FV.nline(-2000, 500, 500, { minor: 100, dot: s, label: v => v < 0 ? '−' + (-v) : v }), hint: 'The most negative is the lowest.', steps: [`<b>${s.slice().sort((a, b) => a - b).map(v => (v < 0 ? '−£' : '£') + Math.abs(v)).join(', ')}</b>`] }, [s.slice().sort((a, b) => a - b).map(v => (v < 0 ? '-£' : '£') + Math.abs(v)).join(', '), s.slice().sort((a, b) => a - b).map(v => (v < 0 ? '−£' : '£') + Math.abs(v)).join(', '), s.slice().sort((a, b) => a - b).join(', ')]); }] });
+
+FSET('fs-l2-formula', {
+  fig: FV.sv(360, 70, FV.Rc(6, 6, 348, 58, { fill: FV.C.blu, rx: 10 }) + FV.T(180, 42, 'C = 25 + 0.4m', { fs: 22 }), 'Formula'), exfig: FV.sv(260, 110, `<text x="130" y="80" text-anchor="middle" style="font-size:70px">🚕</text>`, 'Taxi'),
+  gens: [
+    () => { const a = R(15, 40), b = P([0.25, 0.3, 0.4, 0.45]), m = 10 * R(5, 30); return Q({ text: `A taxi company uses this formula, where C is the cost in £ and m is the number of miles. Find C when m = ${m}.`, svg: FV.sv(360, 70, FV.Rc(6, 6, 348, 58, { fill: FV.C.blu, rx: 10 }) + FV.T(180, 42, `C = ${a} + ${fmt(b)}m`, { fs: 22 }), 'Formula'), answer: rnd(a + b * m, 2), pre: '£', hint: 'Multiply first, then add.', steps: [`${fmt(b)} × ${m} = ${fmt(rnd(b * m, 2))}`, `${a} + ${fmt(rnd(b * m, 2))} = <b>£${fmt(rnd(a + b * m, 2))}</b>`] }); },
+    () => { const a = R(2, 6), b = R(2, 9), c = R(2, 4); return Q({ text: `Work out ${b} + ${a} × ${c}²`, svg: FV.sv(360, 60, FV.T(180, 38, `Indices → × → +`, { acc: 1, fs: 20 }), 'Order'), answer: b + a * c * c, hint: 'Indices first, then multiply, then add.', steps: [`${c}² = ${c * c}`, `${a} × ${c * c} = ${a * c * c}`, `${b} + ${a * c * c} = <b>${b + a * c * c}</b>`] }); },
+    () => { const w = R(55, 95), h = R(155, 190) / 100; const bmi = rnd(w / (h * h), 1); return Q({ text: `BMI = mass (kg) ÷ height (m)². Work out the BMI of someone with mass ${w} kg and height ${fmt(h)} m. Give your answer to 1 d.p.`, svg: FV.row(FV.scale(w, 120, 20, 'kg', { minor: 5 })), answer: bmi, hint: 'Square the height first.', steps: [`${fmt(h)}² = ${fmt(rnd(h * h, 4))}`, `${w} ÷ ${fmt(rnd(h * h, 4))} = <b>${fmt(bmi)}</b>`] }); },
+    () => { const F = P([50, 59, 68, 77, 86, 95, 41]); const C = (F - 32) * 5 / 9; return Q({ text: `To change °F to °C: subtract 32, multiply by 5, then divide by 9. Change ${F} °F to °C.`, svg: FG.machine(['− 32', '× 5', '÷ 9'], `${F}`, '?'), answer: C, unit: '°C', hint: 'Follow the steps in order.', steps: [`${F} − 32 = ${F - 32}`, `× 5 = ${(F - 32) * 5}`, `÷ 9 = <b>${C} °C</b>`] }); },
+    () => { const P0 = R(3, 9) * 5, h = R(2, 6), d = R(1, 4); return Q({ text: `A gym uses the formula T = ${P0}h + 12d to work out the cost in £, where h is the number of personal training hours and d is the number of day passes. Find T when h = ${h} and d = ${d}.`, svg: FV.sv(380, 70, FV.Rc(6, 6, 368, 58, { fill: FV.C.yel, rx: 10 }) + FV.T(190, 42, `T = ${P0}h + 12d`, { fs: 22 }), 'Formula'), answer: P0 * h + 12 * d, pre: '£', hint: 'Substitute each letter, multiply, then add.', steps: [`${P0} × ${h} = ${P0 * h}`, `12 × ${d} = ${12 * d}`, `<b>£${P0 * h + 12 * d}</b>`] }); }] });
+
+FSET('fs-l2-fdp', {
+  fig: FV.row(FV.fbar(1, 2, { w: 160 }), FV.fbar(1, 4, { w: 160 }), FV.fbar(1, 5, { w: 160 })), exfig: FV.fbar(18, 24, { w: 420, total: '24 staff' }),
+  gens: [
+    () => { const p = R(11, 89), a = 10 * R(5, 90); return Q({ text: `Work out ${p}% of £${a}.`, svg: FV.hundred(p), answer: rnd(a * p / 100, 2), pre: '£', hint: `× ${fmt(p / 100)}`, steps: [`${a} × ${fmt(p / 100)} = <b>${money(a * p / 100)}</b>`] }); },
+    () => { const w = P([20, 25, 40, 50]), p = R(1, w - 1); return Q({ text: `${p} out of ${w} customers paid by card. What percentage is that?`, svg: FV.fbar(p, w, { w: 420, total: `${w} customers` }), answer: rnd(p / w * 100, 2), unit: '%', hint: 'Part ÷ whole × 100.', steps: [`${p} ÷ ${w} × 100 = <b>${fmt(rnd(p / w * 100, 2))}%</b>`] }); },
+    () => { const x = P([['3/8', 0.375, 37.5, 3, 8], ['2/5', 0.4, 40, 2, 5], ['7/10', 0.7, 70, 7, 10], ['1/8', 0.125, 12.5, 1, 8], ['3/4', 0.75, 75, 3, 4], ['9/20', 0.45, 45, 9, 20]]); return Q({ text: `Write ${x[0]} as a percentage.`, svg: FV.fbar(x[3], x[4], { w: 400 }), answer: x[2], unit: '%', hint: 'Top ÷ bottom, then × 100.', steps: [`${x[0]} = ${fmt(x[1])} = <b>${fmt(x[2])}%</b>`] }); },
+    () => { const s = shuffle([['3/5', 0.6], ['0.58', 0.58], ['62%', 0.62]]); const best = s.reduce((a, b) => a[1] > b[1] ? a : b); return MCQ({ text: `Three shops offer discounts. Which is the biggest: ${s.map(x => x[0]).join(', ')} off?`, svg: FV.nline(0.5, 0.7, 0.05, { minor: 0.01, dot: s.map(x => x[1]) }), hint: 'Change them all to decimals.', steps: s.map(x => `${x[0]} = ${fmt(x[1])}`).concat([`<b>${best[0]}</b>`]) }, best[0], s.filter(x => x !== best).map(x => x[0])); },
+    () => { const w = P([24, 36, 40, 60]), p = R(2, w - 2); const [n, d] = simp(p, w); return Q({ kind: 'frac', text: `A team played ${w} games and won ${p}. What fraction of the games did they win? Give it in its simplest form.`, svg: FV.pie([{ l: 'Won', a: 360 * p / w, show: 1 }, { l: 'Lost', a: 360 * (w - p) / w, show: 1 }]), answer: [n, d], hint: 'Won / played, then simplify.', steps: [`${p}/${w} = <b>${n}/${d}</b>`] }); }] });
+
+FSET('fs-l2-money', {
+  fig: FV.sv(420, 80, FV.Rc(6, 10, 200, 50, { fill: FV.C.blu, rx: 8 }) + FV.T(106, 42, '100%', { fs: 20 }) + FV.Rc(206, 10, 40, 50, { fill: FV.C.yel, rx: 8 }) + FV.T(226, 42, '20%', { sm: 1 }) + FV.T(330, 42, '= 120% = × 1.2', { acc: 1 }), 'Price plus VAT'), exfig: FV.receipt([['Goods', '?'], ['VAT (20%)', '?']], { total: '£84.00' }),
+  gens: [
+    () => { const o = 10 * R(5, 60), p = R(3, 35); const d = Math.random() < .5; const n = rnd(o * (1 + (d ? -p : p) / 100), 2); return Q({ text: d ? `A TV costs £${o}. In a sale the price falls by ${p}%. What is the new price?` : `A season ticket costs £${o}. Next year the price rises by ${p}%. What is the new price?`, svg: FV.tags([[d ? '📺' : '🎟️', d ? 'TV' : 'ticket', '£' + o]]), answer: n, pre: '£', hint: `Multiplier: ${fmt(1 + (d ? -p : p) / 100)}`, steps: [`${o} × ${fmt(1 + (d ? -p : p) / 100)} = <b>${money(n)}</b>`] }); },
+    () => { const o = 20 * R(5, 50), ch = o * P([5, 10, 15, 20, 25, 30, 40]) / 100, up = Math.random() < .5, n = up ? o + ch : o - ch; return Q({ text: `A rent changes from £${o} to £${n} a month. What is the percentage ${up ? 'increase' : 'decrease'}?`, svg: FV.bar(['Before', 'After'], [o, n], { ymax: Math.ceil(Math.max(o, n) / 200) * 200, step: Math.ceil(Math.max(o, n) / 200) * 40, yl: '£ per month' }), answer: ch / o * 100, unit: '%', hint: 'Change ÷ original × 100.', steps: [`Change = ${ch}`, `${ch} ÷ ${o} × 100 = <b>${fmt(ch / o * 100)}%</b>`], traps: [{ v: rnd(ch / n * 100, 2), why: 'Divide by the ORIGINAL amount, not the new one.' }] }); },
+    () => { const pre = 5 * R(4, 80); return Q({ text: 'The receipt shows the price of a drill including VAT at 20%. What was the price before VAT?', svg: FV.receipt([['Cordless drill', money(pre * 1.2)]], { total: money(pre * 1.2), foot: 'Prices include VAT at 20%', title: 'DIY STORE' }), answer: pre, pre: '£', hint: 'The price with VAT is 120%. Divide by 1.2.', steps: [`${fmt(pre * 1.2)} ÷ 1.2 = <b>£${pre}</b>`], traps: [{ v: rnd(pre * 1.2 * 0.8, 2), why: 'Taking 20% off is not the same as removing VAT: the 20% was added to the smaller price.' }] }); },
+    () => { const P0 = 500 * R(2, 20), r = P([2, 3, 4, 5]), y = R(2, 4); const vals = [...Array(y + 1)].map((_, i) => rnd(P0 * Math.pow(1 + r / 100, i), 2)); return Q({ text: `£${P0.toLocaleString('en-GB')} is invested at ${r}% compound interest per year. What is it worth after ${y} years? Give your answer to the nearest penny.`, svg: FV.bar(vals.map((_, i) => 'Yr ' + i), vals, { ymax: Math.ceil(vals[y] / 1000) * 1000, step: Math.ceil(vals[y] / 1000) * 200, yl: '£' }), answer: vals[y], pre: '£', hint: `× ${fmt(1 + r / 100)} for each year.`, steps: [`${P0} × ${fmt(1 + r / 100)}${'⁰¹²³⁴⁵'[y]} = <b>${money(vals[y])}</b>`] }); },
+    () => { const inc = 50 * R(30, 50), bills = [['Rent', 50 * R(12, 18)], ['Food', 10 * R(20, 40)], ['Travel', 10 * R(5, 15)], ['Bills', 10 * R(10, 25)]]; const spent = bills.reduce((a, b) => a + b[1], 0); return Q({ text: `Jo takes home £${inc} a month. Here is her monthly budget. How much does she have left each month?`, svg: FV.receipt(bills.map(([a, b]) => [a, '£' + b]), { title: 'MONTHLY BUDGET', foot: `Take-home pay £${inc}` }), answer: inc - spent, pre: '£', hint: 'Add the costs, then take them from her pay.', steps: [`Costs: ${spent}`, `${inc} − ${spent} = <b>£${inc - spent}</b>`] }); }] });
+
+FSET('fs-l2-frac', {
+  fig: FV.fshapes([[3, 4, 'bar', '¾ = 6/8'], [6, 8, 'bar', '6/8']]), exfig: FV.row(FV.fbar(11, 4 * 3, { w: 300 }), FV.fbar(13, 8 * 2, { w: 300 })),
+  gens: [
+    () => { const d1 = P([2, 3, 4, 5]), d2 = P([3, 4, 6, 8]), a = R(1, d1 - 1), b = R(1, d2 - 1), L = lcm(d1, d2); const [n, d] = simp(a * L / d1 + b * L / d2, L); return Q({ kind: 'frac', text: 'What is the total weight of flour and sugar in this recipe, in kg?', svg: FV.recipe('Cake', 8, [`${a}/${d1} kg flour`, `${b}/${d2} kg sugar`, '4 eggs']), answer: [n, d], hint: 'Common denominator first.', steps: [`${fr(a * L / d1, L, 1)} + ${fr(b * L / d2, L, 1)} = <b>${mixed(n, d)}</b> kg`] }); },
+    () => { const w1 = R(3, 6), w2 = R(1, 2), d = P([4, 8]), a = R(1, d - 1), b = R(1, d - 1); const tot = (w1 * d + a) - (w2 * d + b); const [n, m] = simp(tot, d); return Q({ kind: 'frac', text: `A plank is ${w1} ${a}/${d} m long. ${w2} ${b}/${d} m is cut off. How much is left?`, svg: FV.plank(`${w1} ${a}/${d} m`, (w2 * d + b) / (w1 * d + a)), answer: [n, m], hint: 'Change both to improper fractions.', steps: [`${w1}${fr(a, d)} = ${fr(w1 * d + a, d, 1)}, ${w2}${fr(b, d)} = ${fr(w2 * d + b, d, 1)}`, `${fr(tot, d, 1)} = <b>${mixed(n, m)}</b> m`] }); },
+    () => { const fs = shuffle([[2, 3], [5, 8], [3, 5], [7, 10]]).slice(0, 3); const o = fs.slice().sort((a, b) => a[0] / a[1] - b[0] / b[1]).map(f => f[0] + '/' + f[1]).join(', '); return TXQ({ text: `Write in order, smallest first: ${fs.map(f => f[0] + '/' + f[1]).join(', ')}`, svg: FV.fshapes(fs.map(f => [f[0], f[1], 'bar', `${f[0]}/${f[1]}`])), hint: 'Change to decimals, or compare the bars.', steps: fs.map(f => `${f[0]}/${f[1]} = ${fmt(rnd(f[0] / f[1], 3))}`).concat([`<b>${o}</b>`]) }, [o, o.replace(/, /g, ' ')]); },
+    () => { const d = P([3, 4, 5, 8]), a = R(1, d - 1), n = R(2, 6); const [p, q] = simp(a * n, d); return Q({ kind: 'frac', text: `Each bottle holds ${a}/${d} of a litre. How many litres do ${n} bottles hold?`, svg: FV.sv(n * 50 + 20, 90, [...Array(n)].map((_, i) => `<text x="${35 + i * 50}" y="70" text-anchor="middle" style="font-size:52px">🍼</text>`).join(''), `${n} bottles`), answer: [p, q], hint: `${n} × ${a}/${d}`, steps: [`${n} × ${a} = ${a * n}, so ${fr(a * n, d, 1)} = <b>${mixed(p, q)}</b> litres`] }); },
+    () => { const d = P([3, 4, 5, 6]), a = R(1, d - 1), b = R(1, d - 1); const [n, m] = simp(a * b, d * d); return Q({ kind: 'frac', text: `${a}/${d} of a garden is lawn. ${b}/${d} of the lawn has flowers planted in it. What fraction of the whole garden has flowers?`, svg: FV.sqgrid([...Array(a * b)].map((_, i) => [i % b, Math.floor(i / b)]), d, d), answer: [n, m], hint: 'Fraction of a fraction: multiply.', steps: [`${a}/${d} × ${b}/${d} = ${a * b}/${d * d}`, `<b>${n}/${m}</b>`] }); }] });
+
+FSET('fs-l2-dec', {
+  fig: FV.pvChart(['2', '3', '5', '0'], ['O', 't', 'h', 'th']), exfig: FV.sv(300, 70, FV.T(150, 40, '235 × 4 = 940 → 0.940', { fs: 20 }), '235 times 4'),
+  gens: [
+    () => { const a = R(1001, 9999) / 1000, b = R(101, 999) / 100; return Q({ text: `Two parcels weigh ${fmt(a)} kg and ${fmt(b)} kg. What is the total weight?`, svg: FV.row(FV.scale(a, 10, 2, 'kg', { minor: 0.5 }), FV.scale(b, 10, 2, 'kg', { minor: 0.5 })), answer: rnd(a + b, 3), unit: 'kg', hint: 'Line up the decimal points.', steps: [`<b>${fmt(rnd(a + b, 3))} kg</b>`] }); },
+    () => { const a = R(11, 99) / 10, b = R(2, 9) / 10; return Q({ text: `Work out ${fmt(a)} × ${fmt(b)}`, answer: rnd(a * b, 3), hint: 'Multiply without the points, then count decimal places.', steps: [`${Math.round(a * 10)} × ${Math.round(b * 10)} = ${Math.round(a * 10) * Math.round(b * 10)}`, `2 decimal places: <b>${fmt(rnd(a * b, 3))}</b>`] }); },
+    () => { const b = P([0.2, 0.4, 0.5, 0.25]), q = R(4, 40), a = rnd(b * q, 3); return Q({ text: `A ${fmt(a)} m length of ribbon is cut into pieces ${fmt(b)} m long. How many pieces?`, svg: FV.fbar(0, Math.min(q, 16), { w: 420, total: fmt(a) + ' m' }), answer: q, hint: 'Divide. Multiply both numbers by 10 or 100 first.', steps: [`${fmt(a)} ÷ ${fmt(b)} = <b>${q}</b>`] }); },
+    () => { const s = shuffle([R(100, 999) / 1000, R(10, 99) / 100, R(1, 9) / 10, R(1000, 1999) / 1000]); return TXQ({ text: `Order these lengths in metres, smallest first: ${s.map(x => fmt(x)).join(', ')}`, svg: FV.nline(0, 2, 0.25, { minor: 0.05, dot: s }), hint: 'Give them all 3 decimal places.', steps: [`<b>${s.slice().sort((a, b) => a - b).map(x => fmt(x)).join(', ')}</b>`] }, [s.slice().sort((a, b) => a - b).map(x => fmt(x)).join(', '), s.slice().sort((a, b) => a - b).map(x => fmt(x)).join(' ')]); },
+    () => { const kg = R(1100, 4900) / 1000, p = R(150, 690) / 100; return Q({ text: 'How much does the cheese cost? Give your answer to the nearest penny.', svg: FV.receipt([['Cheese', `${fmt(kg)} kg`], ['Price per kg', money(p)]], { total: '?', title: 'DELI' }), answer: rnd(kg * p, 2), pre: '£', hint: 'Multiply, then round.', steps: [`${fmt(kg)} × ${fmt(p)} = ${fmt(rnd(kg * p, 4))}`, `<b>${money(kg * p)}</b>`] }); }] });
+
+FSET('fs-l2-ratio', {
+  fig: FV.ratioBar(2, 3, 'Amy', 'Ben', '£45'), exfig: FV.sv(360, 70, FV.T(80, 44, '4 × 6', { fs: 22 }) + FV.T(180, 44, '= 24 =', { fs: 22, acc: 1 }) + FV.T(280, 44, '3 × ?', { fs: 22 }), 'Painter days'),
+  gens: [
+    () => { const a = R(1, 5), b = R(2, 7), k = R(5, 40), t = (a + b) * k; return Q({ text: `£${t} is shared between Amy and Ben in the ratio ${a} : ${b}. How much does Ben get?`, svg: FV.ratioBar(a, b, 'Amy', 'Ben', '£' + t), answer: b * k, pre: '£', hint: 'Add the parts first.', steps: [`${a} + ${b} = ${a + b} parts`, `1 part = ${t} ÷ ${a + b} = ${k}`, `Ben: ${b} × ${k} = <b>£${b * k}</b>`] }); },
+    () => { const n1 = P([4, 6, 8]), g = 25 * R(4, 16), n2 = P([10, 12, 18, 20]); return Q({ text: `This recipe serves ${n1}. How much rice is needed for ${n2} people?`, svg: FV.recipe('Rice', n1, [`${g} g rice`, '1 onion', '500 ml stock']), answer: rnd(g / n1 * n2, 2), unit: 'g', hint: 'Find the amount for 1 person first.', steps: [`1 person: ${g} ÷ ${n1} = ${fmt(rnd(g / n1, 3))}`, `${n2} people: <b>${fmt(rnd(g / n1 * n2, 2))} g</b>`] }); },
+    () => { const w = R(3, 6), d = R(4, 12), opts = [2, 4, 6, 8, 12].filter(x => x !== w && (w * d) % x === 0), w2 = opts.length ? P(opts) : w + 1; return Q({ text: `${w} workers take ${d} days to build a wall. How long would ${w2} workers take, working at the same rate?`, svg: FV.sv(Math.max(w, w2) * 44 + 60, 110, [...Array(w)].map((_, i) => `<text x="${40 + i * 44}" y="40" text-anchor="middle" style="font-size:32px">👷</text>`).join('') + FV.T(10, 36, '', {}) + [...Array(w2)].map((_, i) => `<text x="${40 + i * 44}" y="96" text-anchor="middle" style="font-size:32px">👷</text>`).join(''), `${w} workers, then ${w2} workers`), answer: rnd(w * d / w2, 2), unit: 'days', hint: 'Inverse proportion: find the total worker-days.', steps: [`${w} × ${d} = ${w * d} worker-days`, `${w * d} ÷ ${w2} = <b>${fmt(rnd(w * d / w2, 2))} days</b>`] }); },
+    () => { const s1 = P([500, 750]), p1 = R(120, 260) / 100, s2 = 1000; let p2; do { p2 = rnd(p1 * (s2 / s1) * (R(80, 120) / 100), 2); } while (Math.abs(p1 / s1 - p2 / s2) < 1e-6); const u1 = p1 / s1, u2 = p2 / s2; const ans = u1 < u2 ? 'Bottle A' : 'Bottle B'; return MCQ({ text: 'Which bottle is better value?', svg: FV.bottles([['A', s1, money(p1)], ['B', s2, money(p2)]]), hint: 'Work out the cost of 100 ml for each.', steps: [`A: ${money(p1)} ÷ ${s1 / 100} = ${fmt(rnd(u1 * 10000, 1))}p per 100 ml`, `B: ${money(p2)} ÷ ${s2 / 100} = ${fmt(rnd(u2 * 10000, 1))}p per 100 ml`, `<b>${ans}</b>`] }, ans, [ans === 'Bottle A' ? 'Bottle B' : 'Bottle A', 'Both the same']); },
+    () => { const a = R(1, 4), b = R(2, 6), k = R(3, 12); return Q({ text: `Concrete is mixed with cement and sand in the ratio ${a} : ${b}. A builder uses ${a * k} buckets of cement. How many buckets of sand are needed?`, svg: FV.ratioBar(a, b, 'Cement', 'Sand'), answer: b * k, unit: 'buckets', hint: `Cement went × ${k}. Do the same to sand.`, steps: [`${a * k} ÷ ${a} = ${k}`, `${b} × ${k} = <b>${b * k}</b>`] }); }] });
+
+FSET('fs-l2-convert', {
+  fig: FV.rateBoard([['£1', '€1.15'], ['5 miles', '8 km'], ['1 kg', '2.2 lb']]), exfig: FV.journey('Leeds', 'London', '120 miles in 2 h 30 min'),
+  gens: [
+    () => { const km = 8 * R(3, 25); return Q({ text: `A journey is ${km} km. About how many miles is that?`, svg: FV.row(FV.rateBoard([['5 miles', '8 km']]), FV.journey('Start', 'Finish', km + ' km')), answer: km / 8 * 5, unit: 'miles', hint: 'How many lots of 8 km?', steps: [`${km} ÷ 8 = ${km / 8}`, `× 5 = <b>${km / 8 * 5} miles</b>`] }); },
+    () => { const e = 10 * R(5, 60), r = P([1.12, 1.15, 1.18]); return Q({ text: `How many pounds is €${e}? Give your answer to the nearest penny.`, svg: FV.rateBoard([['£1', '€' + r.toFixed(2)]]), answer: rnd(e / r, 2), pre: '£', hint: 'Euros → pounds: divide.', steps: [`${e} ÷ ${fmt(r)} = <b>${money(e / r)}</b>`] }); },
+    () => { const s = P([40, 45, 50, 60, 64]), t = P([1.5, 2.25, 2.5, 0.75, 1.25]); const tm = `${Math.floor(t)} h ${Math.round((t % 1) * 60)} min`; return Q({ text: `A van travels at an average speed of ${s} mph for ${tm}. How far does it travel?`, svg: FV.journey('Depot', 'Customer', `${s} mph for ${tm}`), answer: s * t, unit: 'miles', hint: 'Change the time to hours as a decimal.', steps: [`${tm} = ${fmt(t)} h`, `${s} × ${fmt(t)} = <b>${fmt(s * t)} miles</b>`] }); },
+    () => { const r = R(1100, 1600) / 100, h = R(30, 40), o = R(2, 8); const tot = rnd(r * h + r * 1.5 * o, 2); return Q({ text: 'Sam is paid time-and-a-half for overtime. Complete the payslip. How much does Sam earn in total?', svg: FV.payslip([['Basic', h, money(r), '?'], ['Overtime', o, '× 1.5', '?']], '?'), answer: tot, pre: '£', hint: 'Overtime rate = 1.5 × normal rate.', steps: [`Basic: ${h} × ${money(r)} = ${money(r * h)}`, `Overtime: ${o} × ${money(r * 1.5)} = ${money(r * 1.5 * o)}`, `Total <b>${money(tot)}</b>`] }); },
+    () => { const v = R(20, 80), d = P([2.7, 7.9, 8.5, 11.3]); return Q({ text: `A metal has density ${fmt(d)} g/cm³. This block has volume ${v} cm³. What is its mass?`, svg: FV.cuboid('', '', '') + `<p class="small center mut" style="margin:-8px 0 10px">Volume ${v} cm³</p>`, answer: rnd(d * v, 2), unit: 'g', hint: 'Mass = density × volume.', steps: [`${fmt(d)} × ${v} = <b>${fmt(rnd(d * v, 2))} g</b>`] }); }] });
+
+FSET('fs-l2-area', {
+  fig: FV.row(FV.circ('r', 'r'), FV.circ('d', 'd')), exfig: FV.circ('4 m', 'd'),
+  gens: [
+    () => { const b = R(4, 16), h = R(3, 12); return Q({ text: 'A triangular sign has the measurements shown. What is its area?', svg: FG.poly([[0, h], [b, h], [b * 0.4, 0]], { s: { 0: `${b} cm` }, nd: false, size: 220, extra: '' }) + `<p class="small center mut" style="margin:-8px 0 10px">Height ${h} cm</p>`, answer: b * h / 2, unit: 'cm²', hint: '½ × base × height.', steps: [`½ × ${b} × ${h} = <b>${fmt(b * h / 2)} cm²</b>`], traps: [{ v: b * h, why: 'Remember to halve for a triangle.' }] }); },
+    () => { const r = R(2, 12) * 10; return Q({ text: 'A circular table top has the radius shown. What is its area? Give your answer to the nearest cm².', svg: FV.circ(r + ' cm', 'r'), answer: Math.round(Math.PI * r * r), unit: 'cm²', hint: 'Area = πr²', steps: [`π × ${r}² = <b>${Math.round(Math.PI * r * r)} cm²</b>`] }); },
+    () => { const d = R(3, 20); return Q({ text: 'Edging is put all the way round this circular flower bed. How much edging is needed? Give your answer to 1 d.p.', svg: FV.circ(d + ' m', 'd'), answer: rnd(Math.PI * d, 1), unit: 'm', hint: 'Circumference = π × diameter.', steps: [`π × ${d} = <b>${fmt(rnd(Math.PI * d, 1))} m</b>`] }); },
+    () => { const w = R(4, 10), l = R(6, 14); const a = w * l + Math.PI * (w / 2) ** 2 / 2; return Q({ text: 'A patio is a rectangle with a semicircle on one end. What is its total area? Give your answer to 1 d.p.', svg: FV.patio(l, w), answer: rnd(a, 1), unit: 'm²', hint: `Rectangle + half a circle with diameter ${w} m.`, steps: [`Rectangle: ${l} × ${w} = ${l * w}`, `Semicircle: ½ × π × ${fmt(w / 2)}² = ${fmt(rnd(Math.PI * (w / 2) ** 2 / 2, 2))}`, `Total <b>${fmt(rnd(a, 1))} m²</b>`] }); },
+    () => { const a = R(4, 10), b = a + R(2, 6), h = R(3, 8); return Q({ text: `A garden bed is a trapezium. Area = ½ × (a + b) × h. Work out its area.`, svg: FG.poly([[0, h], [b, h], [b - (b - a) / 2, 0], [(b - a) / 2, 0]], { s: { 0: `b = ${b} m`, 2: `a = ${a} m` }, nd: false, size: 240 }) + `<p class="small center mut" style="margin:-8px 0 10px">h = ${h} m</p>`, answer: (a + b) * h / 2, unit: 'm²', hint: 'Add the parallel sides, halve, then × height.', steps: [`½ × (${a} + ${b}) × ${h} = <b>${fmt((a + b) * h / 2)} m²</b>`] }); }] });
+
+FSET('fs-l2-vol', {
+  fig: FV.row(FV.cuboid('l', 'w', 'h'), FV.cylinder('r', 'h')), exfig: FV.cuboid('50 cm', '30 cm', '40 cm'),
+  gens: [
+    () => { const l = R(20, 60), w = R(20, 40), h = R(20, 50); return Q({ text: 'How many litres does this fish tank hold? (1000 cm³ = 1 litre)', svg: FV.cuboid(`${l} cm`, `${w} cm`, `${h} cm`), answer: l * w * h / 1000, unit: 'litres', hint: 'Volume in cm³, then ÷ 1000.', steps: [`${l} × ${w} × ${h} = ${l * w * h} cm³`, `÷ 1000 = <b>${fmt(l * w * h / 1000)} litres</b>`] }); },
+    () => { const r = R(3, 10), h = R(8, 25); return Q({ text: 'What is the volume of this tin? Give your answer to the nearest cm³.', svg: FV.cylinder(`r = ${r} cm`, `${h} cm`), answer: Math.round(Math.PI * r * r * h), unit: 'cm³', hint: 'V = πr²h', steps: [`π × ${r}² × ${h} = <b>${Math.round(Math.PI * r * r * h)} cm³</b>`] }); },
+    () => { const l = R(3, 10), w = R(2, 8), h = R(2, 6); return Q({ text: 'Work out the total surface area of this box. Its net is shown too.', svg: FV.row(FV.cuboid(`${l} cm`, `${w} cm`, `${h} cm`), FV.net('cuboid')), answer: 2 * (l * w + l * h + w * h), unit: 'cm²', hint: 'Three pairs of rectangles.', steps: [`2 × (${l * w} + ${l * h} + ${w * h}) = <b>${2 * (l * w + l * h + w * h)} cm²</b>`] }); },
+    () => { const sc = P([50, 100, 200]), d = R(15, 90) / 10; return Q({ text: `This plan has a scale of 1 : ${sc}. The room is ${fmt(d)} cm long on the plan. How long is the real room, in metres?`, svg: FV.sv(300, 140, FV.Rc(20, 30, 220, 90, { fill: FV.C.blu }) + FV.T(130, 22, `${fmt(d)} cm`, { acc: 1, sm: 1 }) + `<text x="130" y="90" text-anchor="middle" style="font-size:34px">🛏️</text>` + FV.T(275, 80, `1 : ${sc}`, { sm: 1 }), 'Floor plan'), answer: rnd(d * sc / 100, 3), unit: 'm', hint: `× ${sc}, then change cm to m.`, steps: [`${fmt(d)} × ${sc} = ${fmt(rnd(d * sc, 2))} cm`, `= <b>${fmt(rnd(d * sc / 100, 3))} m</b>`] }); },
+    () => { const sc = P([20, 50]), m = R(2, 9); return Q({ text: `A scale drawing uses 1 : ${sc}. A real wardrobe is ${m} m tall. How tall should it be on the drawing, in cm?`, svg: FV.sv(160, 160, FV.Rc(40, 10, 80, 140, { fill: FV.C.yel }) + FV.Ln(80, 10, 80, 150, { w: 1.5 }) + FV.T(140, 84, `${m} m`, { acc: 1, a: 'start' }).replace('x="140"', 'x="124"'), 'Wardrobe'), answer: m * 100 / sc, unit: 'cm', hint: `m → cm, then ÷ ${sc}.`, steps: [`${m} m = ${m * 100} cm`, `${m * 100} ÷ ${sc} = <b>${fmt(m * 100 / sc)} cm</b>`] }); }] });
+
+FSET('fs-l2-coord', {
+  fig: FV.grid([[3, 2, 'A'], [-2, -1, 'B']], { r: 5 }), exfig: FV.grid([[-2, 1, 'A'], [4, 1, 'B'], [4, -3, 'C']], { r: 5 }),
+  gens: [
+    () => { const x = R(-5, 5), y = R(-5, 5); return TXQ({ text: 'Write down the coordinates of point A.', svg: FV.grid([[x, y, 'A']], { r: 6 }), hint: 'Across first (x), then up or down (y).', steps: [`<b>(${x}, ${y})</b>`] }, [`(${x}, ${y})`, `${x}, ${y}`, `(${x},${y})`, `${x},${y}`]); },
+    () => { const x1 = R(-5, -1), x2 = R(1, 5), y1 = R(1, 5), y2 = R(-5, -1); return TXQ({ text: `A, B and C are three corners of a rectangle. What are the coordinates of the fourth corner, D?`, svg: FV.grid([[x1, y1, 'A'], [x2, y1, 'B'], [x2, y2, 'C']], { r: 6 }), hint: 'D lines up with A and with C.', steps: [`<b>(${x1}, ${y2})</b>`] }, [`(${x1}, ${y2})`, `${x1}, ${y2}`, `(${x1},${y2})`, `${x1},${y2}`]); },
+    () => { const a = R(35, 80), b = R(35, 80); return Q({ text: 'Work out the missing angle in the triangle.', svg: FV.tri(a, b) + '<p class="small mut center" style="margin:-8px 0 12px">Not drawn accurately</p>', answer: 180 - a - b, unit: '°', hint: 'Angles in a triangle add to 180°.', steps: [`180 − ${a} − ${b} = <b>${180 - a - b}°</b>`] }); },
+    () => { const a = R(60, 120), b = R(60, 110), c = R(60, 100); return Q({ text: 'Work out the missing angle in the quadrilateral.', svg: FV.quad([a + '°', b + '°', c + '°', '?']) + '<p class="small mut center" style="margin:-8px 0 12px">Not drawn accurately</p>', answer: 360 - a - b - c, unit: '°', hint: 'Angles in a quadrilateral add to 360°.', steps: [`360 − ${a} − ${b} − ${c} = <b>${360 - a - b - c}°</b>`] }); },
+    () => { const q = P([['plan (view from above)', 'A'], ['front elevation', 'B']]); return MCQ({ text: `Which drawing is the ${q[0]} of the building?`, svg: FV.houseViews(), hint: 'Imagine looking straight down, or straight at the front.', steps: [`<b>${q[1]}</b>`] }, q[1], ['A', 'B', 'C'].filter(x => x !== q[1])); }] });
+
+FSET('fs-l2-stats', {
+  fig: FV.track([3, 4, 6, 7, 8, 9]), exfig: FV.track([3, 4, '6', '7', 8, 9]),
+  gens: [
+    () => { const n = P([5, 7, 6, 8]), vals = Array.from({ length: n }, () => R(10, 60)); const s = vals.slice().sort((a, b) => a - b); const med = n % 2 ? s[(n - 1) / 2] : (s[n / 2 - 1] + s[n / 2]) / 2; return Q({ text: `Number of calls to a helpline each hour: ${vals.join(', ')}. Find the median.`, svg: FV.track(vals), answer: med, hint: 'Put them in order first, then find the middle.', steps: [`Order: ${s.join(', ')}`, `<b>${fmt(med)}</b>`] }); },
+    () => { const c = ['5', '6', '7', '8', '9'], v = shuffle([R(2, 6), R(2, 6), R(2, 6), R(2, 6), 9]); const k = v.indexOf(9); return Q({ text: 'The bar chart shows the shoe sizes sold in a shop one morning. What is the mode?', svg: FV.bar(c, v, { ymax: 10, step: 2, yl: 'Pairs sold' }), answer: +c[k], hint: 'The mode is the most common value: the tallest bar.', steps: [`<b>${c[k]}</b>`] }); },
+    () => { const fs = [R(2, 8), R(4, 12), R(3, 10), R(1, 6)], mids = [4.5, 14.5, 24.5, 34.5]; const tot = fs.reduce((a, b) => a + b, 0), fx = fs.reduce((a, f, i) => a + f * mids[i], 0); return Q({ text: `The table shows the ages of people at a club.${FV.table(['Age', 'Frequency', 'Midpoint'], [['0–9', fs[0], 4.5], ['10–19', fs[1], 14.5], ['20–29', fs[2], 24.5], ['30–39', fs[3], 34.5]])}Work out an estimate for the mean age. Give your answer to 1 d.p.`, answer: rnd(fx / tot, 1), hint: 'Midpoint × frequency for each row, add, ÷ total frequency.', steps: [`Σ(midpoint × f) = ${fmt(fx)}`, `Total f = ${tot}`, `${fmt(fx)} ÷ ${tot} = <b>${fmt(rnd(fx / tot, 1))}</b>`] }); },
+    () => { const ma = R(50, 70), mb = ma + P([-8, -5, 5, 8]), ra = R(10, 20), rb = ra + P([-6, 6]); const better = ma > mb ? 'A' : 'B', cons = ra < rb ? 'A' : 'B'; return MCQ({ text: `Two teams' quiz scores. Which statement is correct?${FV.table(['', 'Mean', 'Range'], [['Team A', ma, ra], ['Team B', mb, rb]])}`, hint: 'Higher mean = better on average. Smaller range = more consistent.', steps: [`Team ${better} has the higher mean. Team ${cons} has the smaller range.`] }, `Team ${better} scored higher on average; Team ${cons} was more consistent.`, [`Team ${better === 'A' ? 'B' : 'A'} scored higher on average; Team ${cons} was more consistent.`, `Team ${better} scored higher on average; Team ${cons === 'A' ? 'B' : 'A'} was more consistent.`]); },
+    () => { const v = Array.from({ length: 7 }, () => R(10, 40)); const r = Math.max(...v) - Math.min(...v); return Q({ text: 'The line graph shows daily sales of a café over a week. What is the range?', svg: FV.line(['M', 'T', 'W', 'T', 'F', 'S', 'S'], v, { ymax: 40, step: 5, yl: 'Sales' }) + `<p class="small center mut" style="margin:-8px 0 10px">${v.join(', ')}</p>`, answer: r, hint: 'Highest point − lowest point.', steps: [`${Math.max(...v)} − ${Math.min(...v)} = <b>${r}</b>`] }); }] });
+
+FSET('fs-l2-prob', {
+  fig: FV.diceGrid(v => v === 7), exfig: FV.sv(260, 80, ['H H', 'H T', 'T H', 'T T'].map((t, i) => FV.Rc(6 + i * 62, 14, 56, 50, { fill: i === 0 ? FV.C.yel : 'var(--surface,#fff)', rx: 8 }) + FV.T(34 + i * 62, 46, t, { sm: 1 })).join(''), 'Outcomes for two coins'),
+  gens: [
+    () => { const t = P([7, 8, 6, 9, 10, 5]); const ways = [...Array(6).keys()].flatMap(a => [...Array(6).keys()].map(b => a + b + 2)).filter(s => s === t).length; const [n, d] = simp(ways, 36); return Q({ kind: 'frac', text: `Two fair dice are rolled and the scores are added. Use the grid. What is the probability of a total of ${t}?`, svg: FV.diceGrid(), answer: [n, d], hint: `Count how many squares show ${t}. There are 36 squares.`, steps: [`${ways} ways out of 36`, `<b>${n}/${d}</b>`] }); },
+    () => { const a = R(8, 20), b = R(5, 15), c = R(6, 18), d = R(4, 14), tot = a + b + c + d; const [n, m] = simp(c, tot); return Q({ kind: 'frac', text: `The two-way table shows how students travel to college.${FV.table(['', 'Bus', 'Walk', 'Total'], [['Year 1', a, b, a + b], ['Year 2', c, d, c + d], ['Total', a + c, b + d, tot]])}A student is chosen at random. What is the probability they are in Year 2 and travel by bus?`, answer: [n, m], hint: 'Year 2 and bus ÷ total students.', steps: [`${c}/${tot} = <b>${n}/${m}</b>`] }); },
+    () => { const p = P([[1, 4, 0.25, 25], [3, 5, 0.6, 60], [7, 20, 0.35, 35], [1, 8, 0.125, 12.5]]); return Q({ text: `The probability of rain tomorrow is ${p[0]}/${p[1]}. Write this as a percentage.`, svg: FV.probScale([[p[2], '🌧️']]), answer: p[3], unit: '%', hint: 'Top ÷ bottom, then × 100.', steps: [`${p[0]} ÷ ${p[1]} = ${fmt(p[2])}`, `<b>${fmt(p[3])}%</b>`] }); },
+    () => { const t = P(['Positive', 'Negative', 'None']); const pts = Array.from({ length: 12 }, () => { const x = R(5, 95) / 10; const y = t === 'Positive' ? Math.min(9.5, Math.max(.5, x + (R(-15, 15) / 10))) : t === 'Negative' ? Math.min(9.5, Math.max(.5, 10 - x + (R(-15, 15) / 10))) : R(5, 95) / 10; return [x, y]; }); const lab = { Positive: ['Hours of sunshine', 'Ice creams sold'], Negative: ['Outside temperature', 'Gas used'], None: ['Shoe size', 'Test score'] }[t]; return MCQ({ text: 'What type of correlation does the scatter diagram show?', svg: FV.scatter(pts, lab[0], lab[1]), hint: 'Do the crosses go up, go down, or show no pattern?', steps: [`<b>${t}</b>`] }, t, ['Positive', 'Negative', 'None'].filter(x => x !== t)); },
+    () => { const p = R(5, 45) / 100; return Q({ text: `The probability a bus is late is ${fmt(p)}. What is the probability it is not late?`, svg: FV.probScale([[p, 'late'], [1 - p, 'not late']]), answer: rnd(1 - p, 2), hint: 'All probabilities add up to 1.', steps: [`1 − ${fmt(p)} = <b>${fmt(rnd(1 - p, 2))}</b>`] }); }] });
+
+/* =========================================================
    FUNCTIONAL SKILLS: Learn + Practise screens (E1 to L2)
    Loaded after px.js. Units come from fsl1–3.js (FS_UNITS).
    ========================================================= */
@@ -6142,6 +6910,26 @@ play = function () {
   const h = _playFSX();
   if (!sess || !sess.q || !String(sess.q.topic).startsWith('fs-')) return h;
   return h.replace(/<span class="count">Grade \d+(\.\d+)?<\/span>/, '').replace(/<span class="dots5"[^>]*>(<i[^>]*><\/i>)*<\/span>/, '');
+};
+
+/* lesson pictures: the idea and method cards show the unit's picture; the worked example shows its own */
+const _lessonViewFSX = lessonView;
+lessonView = function () {
+  let h = _lessonViewFSX();
+  if (!les || !String(les.id).startsWith('fs-')) return h;
+  const L = LESSONS[les.id], card = les.cards[les.i];
+  if (card === 'intro' && L.fig) h = h.replace(/(<p class="lead dark">[\s\S]*?<\/p>)/, `$1<div class="lfig">${L.fig}</div>`);
+  if (card === 'how' && L.fig) h = h.replace('</ol></article>', `</ol><div class="lfig">${L.fig}</div></article>`);
+  if (card === 'ex' && L.ex.fig) h = h.replace(/(<h3>[\s\S]*?<\/h3>)/, `$1<div class="lfig">${L.ex.fig}</div>`);
+  return h;
+};
+
+/* accept everyday units typed after a Functional Skills answer: 75p, 25°C, 48 mph, 7 buckets */
+const _checkFSX = check;
+check = function (q, input) {
+  if (q && String(q.topic || '').startsWith('fs-') && (q.kind === 'num' || !q.kind) && typeof input === 'string')
+    input = input.replace(/\s*(pence|p|°\s*c|° ?f|degrees?\s*c|celsius|mph|miles?|buckets?|hours?|people|pieces?|boxes|minibuses|litres|cm³|cm²|m²|m³|g\/cm³)\s*$/i, '').replace(/\s*°\s*$/, '');
+  return _checkFSX(q, input);
 };
 </script>
 </body>
